@@ -6,12 +6,23 @@
 //
 
 import UIKit
+import SnapKit
 
 class ItemDetailViewController: UIViewController {
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        setConfigure()
+        setConstraints()
+    }
+    
+    func setConfigure() {
         
     }
+    
+    func setConstraints() {
+        
+    }
+    
 
 }

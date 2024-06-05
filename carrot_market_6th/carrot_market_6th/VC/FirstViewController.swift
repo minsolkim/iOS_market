@@ -8,6 +8,7 @@
 import UIKit
 import SnapKit
 import Then
+import FirebaseFirestore
 
 class FirstViewController: UIViewController {
     //MARK: -- Property
@@ -39,12 +40,11 @@ class FirstViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
-        totalItems = createTotalItems()
         setNavigationController()
         setTableView()
         addSubviews()
         setConfig()
-        
+        loadData() // Firestore 데이터 로드
     }
     
     private func addSubviews() {
@@ -75,27 +75,101 @@ class FirstViewController: UIViewController {
         titleLabel.textColor = .black
         titleLabel.sizeToFit()
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: titleLabel)
-        
-        let image1 = UIImage(named: "bell")?.resizeImage(targetSize: CGSize(width: 25, height: 25))
+
         let image2 = UIImage(named: "loupe")?.resizeImage(targetSize: CGSize(width: 25, height: 25))
-        let button1 = UIBarButtonItem(image: image1?.withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(button1Tapped))
-        let button2 = UIBarButtonItem(image: image2?.withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(button2Tapped))
+        let searchBtn = UIBarButtonItem(image: image2?.withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(searchTapped))
         
-        // 간격을 설정할 UIBarButtonItem을 생성합니다.
         let flexibleSpace = UIBarButtonItem(barButtonSystemItem: .fixedSpace, target: nil, action: nil)
-        flexibleSpace.width = 5.0 // 간격 너비 조정
-        
-        // 오른쪽 버튼들과 간격을 배열로 설정합니다.
-        navigationItem.rightBarButtonItems = [button1, flexibleSpace, button2, flexibleSpace]
+        flexibleSpace.width = 5.0
+        navigationItem.rightBarButtonItems = [searchBtn, flexibleSpace]
     }
     private func setTableView() {
         self.tableView.dataSource = self
         self.tableView.delegate = self
     }
+    
+    // Firestore 데이터 로드
+    private func loadData() {
+        let db = Firestore.firestore()
+        db.collection("posts").getDocuments { snapshot, error in
+            if let error = error {
+                print("오류: \(error.localizedDescription)")
+                return
+            }
+            guard let documents = snapshot?.documents else {
+                print("No documents")
+                return
+            }
+            
+            let dispatchGroup = DispatchGroup()
+            var items: [TotalItem] = []
+            
+            for document in documents {
+                guard let title = document.data()["title"] as? String,
+                      let price = document.data()["price"] as? String,
+                      let content = document.data()["content"] as? String,
+                      let timestamp = document.data()["timestamp"] as? Timestamp,
+                      let imageUrls = document.data()["imageUrls"] as? [String],
+                      let imageUrlString = imageUrls.first,
+                      let imageUrl = URL(string: imageUrlString) else {
+                    continue
+                }
+                
+                dispatchGroup.enter()
+                
+                // 비동기적으로 이미지를 다운로드합니다.
+                self.downloadImage(from: imageUrl) { image in
+                    let formattedPrice = self.formatPrice(price)
+                    let relativeDate = self.relativeDateString(for: timestamp.dateValue())
+                    
+                    let item = Item(image: image, title: title, description: content, price: formattedPrice, date: relativeDate, chatIcon: UIImage(named: "chatIcon"), chatNumber: nil, heartIcon: UIImage(named: "heartIcon"), heartNumber: nil)
+                    items.append(TotalItem.item(item))
+                    dispatchGroup.leave()
+                }
+            }
+            
+            dispatchGroup.notify(queue: .main) {
+                self.totalItems = items
+                self.tableView.reloadData()
+            }
+        }
+    }
+    
+    // 이미지를 다운로드하는 함수
+    private func downloadImage(from url: URL, completion: @escaping (UIImage?) -> Void) {
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let data = data, let image = UIImage(data: data) {
+                completion(image)
+            } else {
+                completion(nil)
+            }
+        }.resume()
+    }
+    //가격 포맷 함수
+    private func formatPrice(_ price: String) -> String {
+        return "\(price) 원"
+    }
+    // 상대적 시간 포맷 함수
+    private func relativeDateString(for date: Date) -> String {
+        let calendar = Calendar.current
+        let now = Date()
+        let components = calendar.dateComponents([.minute, .hour, .day], from: date, to: now)
+        
+        if let day = components.day, day > 0 {
+            return "\(day)일 전"
+        } else if let hour = components.hour, hour > 0 {
+            return "\(hour)시간 전"
+        } else if let minute = components.minute, minute > 0 {
+            return "\(minute)분 전"
+        } else {
+            return "방금 전"
+        }
+    }
     // 플로팅 버튼을 눌렀을 때 실행될 액션
     @objc func floatingButtonTapped() {
         // ItemAddViewController 인스턴스 생성
         let itemAddViewController = ItemAddViewController()
+        itemAddViewController.delegate = self // delegate 설정
 
         // UINavigationController로 래핑
         let navigationController = UINavigationController(rootViewController: itemAddViewController)
@@ -106,23 +180,12 @@ class FirstViewController: UIViewController {
         // 뷰 컨트롤러를 모달로 프레젠트
         self.present(navigationController, animated: true, completion: nil)
     }
-    func createTotalItems() -> [TotalItem] {
-        var totalItems: [TotalItem] = []
-        
-        for item in itemList.items.prefix(3) {
-            totalItems.append(.item(item))
-        }
-        
-        if let firstHorizItem = collectItemList.items.first {
-            totalItems.append(.horizItem(firstHorizItem))
-        }
-        
-        for item in itemList.items.dropFirst(3) {
-            totalItems.append(.item(item))
-        }
-        return totalItems
+}
+
+extension FirstViewController: ItemAddViewControllerDelegate {
+    func didSaveNewItem() {
+        loadData() // 새 아이템 저장 후 데이터 새로고침
     }
-    
 }
 
 extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
@@ -171,18 +234,15 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
         }
     }
     
-    
     //MARK: -- Action
-    @objc func button1Tapped() {
-        print("Button 1 tapped")
-    }
     
-    @objc func button2Tapped() {
-        
-        print("Button 2 tapped")
+    @objc func searchTapped() {
+        print("검색창 넘어가기")
+        let searchVC = SearchViewController()
+        navigationController?.pushViewController(searchVC, animated: true)
     }
-    
 }
+
 extension UIImage {
     func resizeImage(targetSize: CGSize) -> UIImage? {
         let renderer = UIGraphicsImageRenderer(size: targetSize)

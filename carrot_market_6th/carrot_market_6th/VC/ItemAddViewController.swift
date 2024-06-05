@@ -11,8 +11,15 @@ import AVFoundation
 import SnapKit
 import Firebase
 import FirebaseFirestore
+import FirebaseStorage
+import FirebaseAuth
+
+protocol ItemAddViewControllerDelegate: AnyObject {
+    func didSaveNewItem()
+}
 
 class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout {
+    weak var delegate: ItemAddViewControllerDelegate?
     private lazy var customButton: UIButton = makeCustomButton()
     private var selectedImages: [UIImage] = []
     let barView = UIView()
@@ -28,7 +35,7 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         layout.scrollDirection = .horizontal
         layout.minimumInteritemSpacing = 10
         layout.minimumLineSpacing = 10
-
+        
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.delegate = self
         collectionView.dataSource = self
@@ -38,22 +45,23 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         
         return collectionView
     }()
-   
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         navigationControl()
         setConfigure()
         setConstraints()
+        signInAnonymously()
     }
-
+    
     func navigationControl() {
         navigationItem.title = "내 물건 팔기"
-
+        
         // 'X' 버튼 추가
         let closeButton = UIBarButtonItem(barButtonSystemItem: .close, target: self, action: #selector(closeButtonTapped))
         navigationItem.leftBarButtonItem = closeButton
-
+        
         // Custom '저장' 버튼 추가
         let saveButton = UIButton(type: .system)
         saveButton.setTitle("저장", for: .normal)
@@ -61,7 +69,7 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         saveButton.addTarget(self, action: #selector(saveButtonTapped), for: .touchUpInside)
         let saveBarButtonItem = UIBarButtonItem(customView: saveButton)
         navigationItem.rightBarButtonItem = saveBarButtonItem
-
+        
         navigationController?.navigationBar.tintColor = .black
         navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
     }
@@ -75,13 +83,13 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         let imageConfig = UIImage.SymbolConfiguration(pointSize: pointSize)
         config.image = UIImage.init(named: "cameraIcon")
         config.preferredSymbolConfigurationForImage = imageConfig
-
+        
         config.imagePlacement = .top
         config.background.backgroundColor = .white
         config.background.strokeColor = UIColor.warmgray
         config.baseForegroundColor = .lightGray
         config.cornerStyle = .small
-
+        
         // 이미지와 텍스트 간격 조절
         config.imagePadding = 12.7
         config.titlePadding = 10
@@ -127,6 +135,15 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         }
     }
     
+    func signInAnonymously() {
+        Auth.auth().signInAnonymously() { authResult, error in
+            if let error = error {
+                print("Error signing in anonymously: \(error.localizedDescription)")
+            } else {
+                print("Signed in anonymously with user ID: \(authResult?.user.uid ?? "unknown")")
+            }
+        }
+    }
     
     func setConstraints() {
         view.addSubviews(customButton,collectionView,barView,titleTextField,barView2,contentTextField,barView3,fullContentTextField,barView4)
@@ -184,17 +201,17 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
     }
     
     func pickImage(){
-            let photoLibrary = PHPhotoLibrary.shared()
-            var configuration = PHPickerConfiguration(photoLibrary: photoLibrary)
-
-            configuration.selectionLimit = 5 //한번에 가지고 올 이미지 갯수 제한
-            configuration.filter = .any(of: [.images]) // 이미지, 비디오 등의 옵션
-
-            DispatchQueue.main.async { // 메인 스레드에서 코드를 실행시켜야함
-                let picker = PHPickerViewController(configuration: configuration)
-                picker.delegate = self
-                picker.isEditing = true
-                self.present(picker, animated: true, completion: nil) // 갤러리뷰 프리젠트
+        let photoLibrary = PHPhotoLibrary.shared()
+        var configuration = PHPickerConfiguration(photoLibrary: photoLibrary)
+        
+        configuration.selectionLimit = 5 //한번에 가지고 올 이미지 갯수 제한
+        configuration.filter = .any(of: [.images]) // 이미지, 비디오 등의 옵션
+        
+        DispatchQueue.main.async { // 메인 스레드에서 코드를 실행시켜야함
+            let picker = PHPickerViewController(configuration: configuration)
+            picker.delegate = self
+            picker.isEditing = true
+            self.present(picker, animated: true, completion: nil) // 갤러리뷰 프리젠트
         }
     }
     
@@ -218,7 +235,85 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         NotificationCenter.default.addObserver(self, selector: #selector(keyboardWillHide), name: UIResponder.keyboardWillHideNotification, object: nil)
     }
     
+    func showAlert(message: String) {
+        let alertController = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "확인", style: .default, handler: nil)
+        alertController.addAction(okAction)
+        present(alertController, animated: true, completion: nil)
+    }
+    
+    func uploadImageToFirebase(image: UIImage, completion: @escaping (Result<String, Error>) -> Void) {
+        let storageRef = Storage.storage().reference()
+        let imageRef = storageRef.child("images/\(UUID().uuidString).jpg")
+        
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            completion(.failure(NSError(domain: "ImageConversionError", code: -1, userInfo: nil)))
+            return
+        }
+        
+        imageRef.putData(imageData, metadata: nil) { metadata, error in
+            if let error = error {
+                completion(.failure(error))
+                return
+            }
+            
+            imageRef.downloadURL { url, error in
+                if let error = error {
+                    completion(.failure(error))
+                } else if let url = url {
+                    completion(.success(url.absoluteString))
+                }
+            }
+        }
+    }
+    
     //MARK: - @objc
+    @objc func saveButtonTapped() {
+        guard let title = titleTextField.text, !title.isEmpty,
+              let price = contentTextField.text, !price.isEmpty,
+              let content = fullContentTextField.text, !content.isEmpty, content != "텍스트 뷰 플레이스 홀더" else {
+            // Show an alert if any required field is empty
+            showAlert(message: "모든 필드를 채워주세요.")
+            return
+        }
+        
+        var imageUrls: [String] = []
+        let dispatchGroup = DispatchGroup()
+        
+        for image in selectedImages {
+            dispatchGroup.enter()
+            uploadImageToFirebase(image: image) { result in
+                switch result {
+                case .success(let url):
+                    imageUrls.append(url)
+                case .failure(let error):
+                    print("Error uploading image: \(error)")
+                }
+                dispatchGroup.leave()
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            let postData: [String: Any] = [
+                "title": title,
+                "price": price,
+                "content": content,
+                "timestamp": Timestamp(date: Date()),
+                "imageUrls": imageUrls
+            ]
+            
+            let db = Firestore.firestore()
+            db.collection("posts").addDocument(data: postData) { error in
+                if let error = error {
+                    self.showAlert(message: "데이터를 저장하는 데 실패했습니다: \(error.localizedDescription)")
+                } else {
+                    self.delegate?.didSaveNewItem()
+                    self.dismiss(animated: true)
+                }
+            }
+        }
+    }
+    
     @objc func keyboardWillShow(notification: NSNotification) {
         if let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue {
             let keyboardHeight = keyboardSize.height
@@ -227,31 +322,25 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
     }
     
     @objc func keyboardWillHide(notification: NSNotification) {
-       // adjustViewForKeyboard(show: false, keyboardHeight: 0)
+        // adjustViewForKeyboard(show: false, keyboardHeight: 0)
     }
     // 'X' 버튼 클릭 시 호출될 메서드
     @objc func closeButtonTapped() {
         self.dismiss(animated: true, completion: nil)
     }
-
-    // '저장' 버튼 클릭 시 호출될 메서드
-    @objc func saveButtonTapped() {
-        // 저장 동작 구현
-        print("저장 버튼 클릭됨")
-    }
     
     @objc func photoButtonTapped() {
         let actionSheet = UIAlertController(title: "사진 선택", message: "원하는 방법을 선택하세요", preferredStyle: .actionSheet)
-
+        
         let chooseFromLibraryAction = UIAlertAction(title: "앨범에서 사진 선택", style: .default) { _ in
             self.collectionView.isHidden = false
             self.touchUpImageAddButton(button: self.customButton)
         }
-
+        
         let cancelAction = UIAlertAction(title: "취소", style: .cancel, handler: nil)
         chooseFromLibraryAction.setValue(UIColor.white, forKey: "titleTextColor")
         cancelAction.setValue(UIColor.red, forKey: "titleTextColor")
-
+        
         actionSheet.addAction(chooseFromLibraryAction)
         actionSheet.addAction(cancelAction)
         
@@ -274,71 +363,6 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
                 self.pickImage() // 갤러리 불러오는 동작을 할 함수
             @unknown default:
                 print("PHPhotoLibrary::execute - \"Unknown case\"")
-            }
-        }
-    }
-}
-extension ItemAddViewController: UITextFieldDelegate {
-    
-    func textViewDidBeginEditing(_ textView: UITextView) {
-       if textView.text == textViewPlaceHolder {
-           textView.text = nil
-           textView.textColor = .black
-       }
-    }
-
-   func textViewDidEndEditing(_ textView: UITextView) {
-       if textView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-           textView.text = textViewPlaceHolder
-           textView.textColor = .lightGray
-       }
-    }
-    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
-        guard let currentText = textField.text as NSString? else { return true }
-        let newString = currentText.replacingCharacters(in: range, with: string)
-        let digitsOnly = newString.replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression)
-        
-        if let formattedNumber = formatNumber(digitsOnly) {
-            textField.text = "₩ \(formattedNumber)"
-        } else {
-            textField.text = "₩ "
-        }
-        
-        return false
-    }
-
-    func formatNumber(_ number: String) -> String? {
-        guard let numberInt = Int(number) else { return nil }
-        let numberFormatter = NumberFormatter()
-        numberFormatter.numberStyle = .decimal
-        return numberFormatter.string(from: NSNumber(value: numberInt))
-    }
-}
-extension ItemAddViewController: UITextViewDelegate {
-    func textViewDidChange(_ textView: UITextView) {
-        guard let text = textView.text else { return }
-        
-        //글자 수 제한
-        let maxLength = 100
-        if text.count > maxLength {
-            textView.text = String(text.prefix(maxLength))
-        }
-        // 줄바꿈(들여쓰기) 제한
-        let maxNumberOfLines = 4
-        let lineBreakCharacter = "\n"
-        let lines = text.components(separatedBy: lineBreakCharacter)
-        var consecutiveLineBreakCount = 0 // 연속된 줄 바꿈 횟수
-        
-        for line in lines {
-            if line.isEmpty {
-                consecutiveLineBreakCount += 1
-            } else {
-                consecutiveLineBreakCount = 0
-            }
-
-            if consecutiveLineBreakCount > maxNumberOfLines {
-                textView.text = String(text.dropLast())
-                break
             }
         }
     }
@@ -396,13 +420,6 @@ extension ItemAddViewController: PHPickerViewControllerDelegate {
 
 extension ItemAddViewController: UICollectionViewDelegate, UICollectionViewDataSource {
     
-    func showAlert(message: String) {
-        let alertController = UIAlertController(title: nil, message: message, preferredStyle: .alert)
-        let okAction = UIAlertAction(title: "확인", style: .default, handler: nil)
-        alertController.addAction(okAction)
-        present(alertController, animated: true, completion: nil)
-    }
-    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return selectedImages.count
     }
@@ -412,5 +429,70 @@ extension ItemAddViewController: UICollectionViewDelegate, UICollectionViewDataS
         let image = selectedImages[indexPath.item]
         cell.imageView.image = image
         return cell
+    }
+}
+extension ItemAddViewController: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        guard let text = textView.text else { return }
+        
+        //글자 수 제한
+        let maxLength = 100
+        if text.count > maxLength {
+            textView.text = String(text.prefix(maxLength))
+        }
+        // 줄바꿈(들여쓰기) 제한
+        let maxNumberOfLines = 4
+        let lineBreakCharacter = "\n"
+        let lines = text.components(separatedBy: lineBreakCharacter)
+        var consecutiveLineBreakCount = 0 // 연속된 줄 바꿈 횟수
+        
+        for line in lines {
+            if line.isEmpty {
+                consecutiveLineBreakCount += 1
+            } else {
+                consecutiveLineBreakCount = 0
+            }
+
+            if consecutiveLineBreakCount > maxNumberOfLines {
+                textView.text = String(text.dropLast())
+                break
+            }
+        }
+    }
+}
+extension ItemAddViewController: UITextFieldDelegate {
+    
+    func textViewDidBeginEditing(_ textView: UITextView) {
+       if textView.text == textViewPlaceHolder {
+           textView.text = nil
+           textView.textColor = .black
+       }
+    }
+
+   func textViewDidEndEditing(_ textView: UITextView) {
+       if textView.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+           textView.text = textViewPlaceHolder
+           textView.textColor = .lightGray
+       }
+    }
+    func textField(_ textField: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+        guard let currentText = textField.text as NSString? else { return true }
+        let newString = currentText.replacingCharacters(in: range, with: string)
+        let digitsOnly = newString.replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression)
+        
+        if let formattedNumber = formatNumber(digitsOnly) {
+            textField.text = "₩ \(formattedNumber)"
+        } else {
+            textField.text = "₩ "
+        }
+        
+        return false
+    }
+
+    func formatNumber(_ number: String) -> String? {
+        guard let numberInt = Int(number) else { return nil }
+        let numberFormatter = NumberFormatter()
+        numberFormatter.numberStyle = .decimal
+        return numberFormatter.string(from: NSNumber(value: numberInt))
     }
 }

@@ -21,7 +21,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let navigationController1 = UINavigationController(rootViewController: viewController1)
         navigationController1.tabBarItem = UITabBarItem(title: "홈", image: resizeImage(image: UIImage(named: "home"), targetSize: CGSize(width: 20, height: 20)), selectedImage: nil)
 
-        let viewController5 = FifthViewController()
+        let viewController5 = MyPageViewController()
         let navigationController5 = UINavigationController(rootViewController: viewController5)
         navigationController5.tabBarItem = UITabBarItem(title: "나의 당근", image: resizeImage(image: UIImage(named: "user"), targetSize: CGSize(width: 20, height: 20)), selectedImage: nil)
 
