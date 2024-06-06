@@ -52,7 +52,6 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         navigationControl()
         setConfigure()
         setConstraints()
-        signInAnonymously()
     }
     
     func navigationControl() {
@@ -124,7 +123,7 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         
         fullContentTextField.do {
             $0.font = .systemFont(ofSize: 15)
-            $0.textColor = .black
+            $0.textColor = .warmgray
             $0.textAlignment = .left
             $0.text = textViewPlaceHolder
             $0.delegate = self
@@ -135,15 +134,7 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         }
     }
     
-    func signInAnonymously() {
-        Auth.auth().signInAnonymously() { authResult, error in
-            if let error = error {
-                print("Error signing in anonymously: \(error.localizedDescription)")
-            } else {
-                print("Signed in anonymously with user ID: \(authResult?.user.uid ?? "unknown")")
-            }
-        }
-    }
+
     
     func setConstraints() {
         view.addSubviews(customButton,collectionView,barView,titleTextField,barView2,contentTextField,barView3,fullContentTextField,barView4)
@@ -190,7 +181,7 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         fullContentTextField.snp.makeConstraints {
             $0.top.equalTo(barView3.snp.bottom).offset(10)
             $0.leading.trailing.equalToSuperview().inset(20)
-            $0.height.equalTo(100)
+            $0.height.equalTo(150)
         }
         
         barView4.snp.makeConstraints {
@@ -277,6 +268,12 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
             return
         }
         
+        guard let user = Auth.auth().currentUser else {
+            showAlert(message: "로그인이 필요합니다.")
+            return
+        }
+        let email = user.email ?? "Anonymous"
+        let nickname = email.components(separatedBy: "@").first ?? "Anonymous"
         var imageUrls: [String] = []
         let dispatchGroup = DispatchGroup()
         
@@ -299,7 +296,9 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
                 "price": price,
                 "content": content,
                 "timestamp": Timestamp(date: Date()),
-                "imageUrls": imageUrls
+                "imageUrls": imageUrls,
+                "nickname" : nickname,
+                "heartCount" : 0
             ]
             
             let db = Firestore.firestore()

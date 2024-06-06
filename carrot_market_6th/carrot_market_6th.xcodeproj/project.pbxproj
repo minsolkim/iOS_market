@@ -17,6 +17,11 @@
 		58294D2E2C0F557000E7C198 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 58294D2D2C0F557000E7C198 /* FirebaseStorage */; };
 		58294D302C0F57F200E7C198 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 58294D2F2C0F57F200E7C198 /* FirebaseAuth */; };
 		58294D322C10273500E7C198 /* SearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58294D312C10273500E7C198 /* SearchViewController.swift */; };
+		58294D352C10459500E7C198 /* NavigationBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58294D342C10459500E7C198 /* NavigationBar.swift */; };
+		58294D372C10672A00E7C198 /* SeparatedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58294D362C10672A00E7C198 /* SeparatedView.swift */; };
+		58294D392C1067B200E7C198 /* PurchaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58294D382C1067B200E7C198 /* PurchaseView.swift */; };
+		58294D3B2C10BA0D00E7C198 /* LoginViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58294D3A2C10BA0D00E7C198 /* LoginViewController.swift */; };
+		58294D3F2C1196AA00E7C198 /* MyFavoriteViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58294D3E2C1196AA00E7C198 /* MyFavoriteViewController.swift */; };
 		582DB1E42BC27C8700600EA7 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DB1E32BC27C8700600EA7 /* AppDelegate.swift */; };
 		582DB1E62BC27C8700600EA7 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DB1E52BC27C8700600EA7 /* SceneDelegate.swift */; };
 		582DB1ED2BC27C8900600EA7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 582DB1EC2BC27C8900600EA7 /* Assets.xcassets */; };
@@ -31,7 +36,6 @@
 		582DB2272BC27F8A00600EA7 /* HomeTableViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DB2262BC27F8A00600EA7 /* HomeTableViewCell.swift */; };
 		582DB22B2BC4042700600EA7 /* HomeTableViewCellTwo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DB22A2BC4042700600EA7 /* HomeTableViewCellTwo.swift */; };
 		582DB22D2BC4049A00600EA7 /* HomeCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DB22C2BC4049A00600EA7 /* HomeCollectionViewCell.swift */; };
-		582DB2302BC53AFA00600EA7 /* ItemList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DB22F2BC53AFA00600EA7 /* ItemList.swift */; };
 		582DB2322BC53F9900600EA7 /* Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 582DB2312BC53F9900600EA7 /* Item.swift */; };
 		58522CB12BC8EC5C00510536 /* HorizItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58522CB02BC8EC5C00510536 /* HorizItem.swift */; };
 		58522CB32BC8ECA000510536 /* HorizItemList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58522CB22BC8ECA000510536 /* HorizItemList.swift */; };
@@ -62,6 +66,11 @@
 		58294D222C0ED30100E7C198 /* UIView+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIView+.swift"; sourceTree = "<group>"; };
 		58294D2B2C0F4E6400E7C198 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		58294D312C10273500E7C198 /* SearchViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchViewController.swift; sourceTree = "<group>"; };
+		58294D342C10459500E7C198 /* NavigationBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBar.swift; sourceTree = "<group>"; };
+		58294D362C10672A00E7C198 /* SeparatedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeparatedView.swift; sourceTree = "<group>"; };
+		58294D382C1067B200E7C198 /* PurchaseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PurchaseView.swift; sourceTree = "<group>"; };
+		58294D3A2C10BA0D00E7C198 /* LoginViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewController.swift; sourceTree = "<group>"; };
+		58294D3E2C1196AA00E7C198 /* MyFavoriteViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyFavoriteViewController.swift; sourceTree = "<group>"; };
 		582DB1E02BC27C8700600EA7 /* carrot_market_6th.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = carrot_market_6th.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		582DB1E32BC27C8700600EA7 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		582DB1E52BC27C8700600EA7 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -78,7 +87,6 @@
 		582DB2262BC27F8A00600EA7 /* HomeTableViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTableViewCell.swift; sourceTree = "<group>"; };
 		582DB22A2BC4042700600EA7 /* HomeTableViewCellTwo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeTableViewCellTwo.swift; sourceTree = "<group>"; };
 		582DB22C2BC4049A00600EA7 /* HomeCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeCollectionViewCell.swift; sourceTree = "<group>"; };
-		582DB22F2BC53AFA00600EA7 /* ItemList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemList.swift; sourceTree = "<group>"; };
 		582DB2312BC53F9900600EA7 /* Item.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Item.swift; sourceTree = "<group>"; };
 		58522CB02BC8EC5C00510536 /* HorizItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizItem.swift; sourceTree = "<group>"; };
 		58522CB22BC8ECA000510536 /* HorizItemList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizItemList.swift; sourceTree = "<group>"; };
@@ -129,6 +137,25 @@
 			children = (
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		58294D332C10458200E7C198 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				58294D342C10459500E7C198 /* NavigationBar.swift */,
+				58294D362C10672A00E7C198 /* SeparatedView.swift */,
+				58294D382C1067B200E7C198 /* PurchaseView.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		58294D3C2C11968200E7C198 /* MyPageVC */ = {
+			isa = PBXGroup;
+			children = (
+				582DB21C2BC27CFB00600EA7 /* MyPageViewController.swift */,
+				58294D3E2C1196AA00E7C198 /* MyFavoriteViewController.swift */,
+			);
+			path = MyPageVC;
 			sourceTree = "<group>";
 		};
 		582DB1D72BC27C8700600EA7 = {
@@ -188,12 +215,14 @@
 		582DB2132BC27CB100600EA7 /* VC */ = {
 			isa = PBXGroup;
 			children = (
+				58294D3C2C11968200E7C198 /* MyPageVC */,
+				58294D332C10458200E7C198 /* View */,
 				58294D122C0E0DB800E7C198 /* Cell */,
 				582DB2142BC27CC600600EA7 /* FirstViewController.swift */,
-				582DB21C2BC27CFB00600EA7 /* MyPageViewController.swift */,
 				58294D102C0E047500E7C198 /* ItemAddViewController.swift */,
 				58294D152C0E14B000E7C198 /* ItemDetailViewController.swift */,
 				58294D312C10273500E7C198 /* SearchViewController.swift */,
+				58294D3A2C10BA0D00E7C198 /* LoginViewController.swift */,
 			);
 			path = VC;
 			sourceTree = "<group>";
@@ -220,7 +249,6 @@
 		582DB22E2BC5375700600EA7 /* Model */ = {
 			isa = PBXGroup;
 			children = (
-				582DB22F2BC53AFA00600EA7 /* ItemList.swift */,
 				582DB2312BC53F9900600EA7 /* Item.swift */,
 				58522CB02BC8EC5C00510536 /* HorizItem.swift */,
 				58522CB22BC8ECA000510536 /* HorizItemList.swift */,
@@ -375,12 +403,16 @@
 			files = (
 				58294D112C0E047500E7C198 /* ItemAddViewController.swift in Sources */,
 				58294D142C0E0DD200E7C198 /* PhotoViewCell.swift in Sources */,
+				58294D372C10672A00E7C198 /* SeparatedView.swift in Sources */,
+				58294D392C1067B200E7C198 /* PurchaseView.swift in Sources */,
 				582DB1E42BC27C8700600EA7 /* AppDelegate.swift in Sources */,
 				58294D322C10273500E7C198 /* SearchViewController.swift in Sources */,
 				58522CB12BC8EC5C00510536 /* HorizItem.swift in Sources */,
+				58294D352C10459500E7C198 /* NavigationBar.swift in Sources */,
+				58294D3B2C10BA0D00E7C198 /* LoginViewController.swift in Sources */,
 				582DB1E62BC27C8700600EA7 /* SceneDelegate.swift in Sources */,
+				58294D3F2C1196AA00E7C198 /* MyFavoriteViewController.swift in Sources */,
 				58294D162C0E14B000E7C198 /* ItemDetailViewController.swift in Sources */,
-				582DB2302BC53AFA00600EA7 /* ItemList.swift in Sources */,
 				582DB21D2BC27CFB00600EA7 /* MyPageViewController.swift in Sources */,
 				582DB2322BC53F9900600EA7 /* Item.swift in Sources */,
 				582DB22D2BC4049A00600EA7 /* HomeCollectionViewCell.swift in Sources */,

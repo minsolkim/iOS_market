@@ -23,12 +23,6 @@ class HomeTableViewCell: UITableViewCell {
         $0.textAlignment = .left
     }
     
-    let descriptionLabel = UILabel().then {
-        $0.font = .systemFont(ofSize: 13)
-        $0.textColor = .gray
-        $0.numberOfLines = 0
-    }
-    
     let priceLabel = UILabel().then {
         $0.font = .boldSystemFont(ofSize: 14)
         $0.numberOfLines = 0
@@ -45,18 +39,9 @@ class HomeTableViewCell: UITableViewCell {
         $0.alignment = .fill
         $0.spacing = 5
     }
-    let chatIcon = UIImageView().then {
-        $0.image = UIImage(named: "chatIcon")
-    }
     
     let heartIcon = UIImageView().then {
         $0.image = UIImage(named: "heartIcon")
-    }
-    
-    let chatNumberLabel = UILabel().then {
-        $0.font = .systemFont(ofSize: 14)
-        $0.textColor = .gray
-        $0.numberOfLines = 0
     }
     
     let heartNumberLabel = UILabel().then {
@@ -76,12 +61,9 @@ class HomeTableViewCell: UITableViewCell {
                ])
         contentView.addSubview(thumbnailImageView)
         contentView.addSubview(titleLabel)
-        contentView.addSubview(descriptionLabel)
         contentView.addSubview(dateLabel)
         contentView.addSubview(priceLabel)
         contentView.addSubview(horizontalStackView)
-        horizontalStackView.addArrangedSubview(chatIcon)
-        horizontalStackView.addArrangedSubview(chatNumberLabel)
         horizontalStackView.addArrangedSubview(heartIcon)
         horizontalStackView.addArrangedSubview(heartNumberLabel)
         
@@ -97,19 +79,14 @@ class HomeTableViewCell: UITableViewCell {
             $0.trailing.equalToSuperview().inset(8)
         }
         
-        descriptionLabel.snp.makeConstraints {
+        dateLabel.snp.makeConstraints {
             $0.top.equalTo(titleLabel.snp.bottom).offset(8)
             $0.leading.equalTo(titleLabel.snp.leading)
         }
         
-        dateLabel.snp.makeConstraints {
-            $0.top.equalTo(descriptionLabel.snp.top)
-            $0.leading.equalTo(descriptionLabel.snp.trailing).offset(5)
-        }
-        
         priceLabel.snp.makeConstraints {
-            $0.top.equalTo(descriptionLabel.snp.bottom).offset(5)
-            $0.leading.equalTo(descriptionLabel.snp.leading)
+            $0.top.equalTo(dateLabel.snp.bottom).offset(5)
+            $0.leading.equalTo(dateLabel.snp.leading)
         }
         
         horizontalStackView.snp.makeConstraints {

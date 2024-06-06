@@ -13,10 +13,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        // 윈도우 객체와 연결된 루트뷰컨트롤러 가져오기
         guard let windowScene = (scene as? UIWindowScene) else { return }
         window = UIWindow(windowScene: windowScene)
-        
+
+        let loginViewController = LoginViewController()
+        window?.rootViewController = loginViewController
+        window?.makeKeyAndVisible()
+    }
+    func showMainTabBarController() {
         let viewController1 = FirstViewController()
         let navigationController1 = UINavigationController(rootViewController: viewController1)
         navigationController1.tabBarItem = UITabBarItem(title: "홈", image: resizeImage(image: UIImage(named: "home"), targetSize: CGSize(width: 20, height: 20)), selectedImage: nil)
@@ -30,7 +34,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         tabBarController.setViewControllers([navigationController1, navigationController5], animated: true)
         window?.rootViewController = tabBarController
-        window?.makeKeyAndVisible()
     }
     func resizeImage(image: UIImage?, targetSize: CGSize) -> UIImage? {
         guard let image = image else {

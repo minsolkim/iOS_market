@@ -12,11 +12,14 @@ import FirebaseFirestore
 
 class FirstViewController: UIViewController {
     //MARK: -- Property
-    let itemList = ItemList()
+//    let itemList = ItemList()
     let collectItemList = HorizItemList()
+    let activityIndicator = UIActivityIndicatorView(style: .large).then {
+        $0.hidesWhenStopped = true
+    }
     var totalItems: [TotalItem] = []
     private let tableView = UITableView().then {
-        $0.allowsSelection = false
+        $0.allowsSelection = true
         $0.backgroundColor = .white
         $0.showsVerticalScrollIndicator = true
         $0.contentInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
@@ -50,6 +53,7 @@ class FirstViewController: UIViewController {
     private func addSubviews() {
         view.addSubview(tableView)
         view.addSubview(floatingButton)
+        view.addSubview(activityIndicator)
         view.bringSubviewToFront(floatingButton)
         floatingButton.isHidden = false
         floatingButton.addTarget(self, action: #selector(floatingButtonTapped), for: .touchUpInside)
@@ -57,6 +61,9 @@ class FirstViewController: UIViewController {
     private func setConfig() {
         tableView.snp.makeConstraints {
             $0.edges.equalTo(view.safeAreaLayoutGuide)
+        }
+        activityIndicator.snp.makeConstraints { make in
+            make.center.equalToSuperview()
         }
         floatingButton.snp.makeConstraints {
             $0.trailing.equalToSuperview().inset(20)
@@ -71,11 +78,11 @@ class FirstViewController: UIViewController {
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedString.Key.foregroundColor: UIColor.black]
         
         let titleLabel = UILabel()
-        titleLabel.text = "내 위치"
+        titleLabel.text = "우체통마켓"
         titleLabel.textColor = .black
         titleLabel.sizeToFit()
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: titleLabel)
-
+        
         let image2 = UIImage(named: "loupe")?.resizeImage(targetSize: CGSize(width: 25, height: 25))
         let searchBtn = UIBarButtonItem(image: image2?.withRenderingMode(.alwaysOriginal), style: .plain, target: self, action: #selector(searchTapped))
         
@@ -90,8 +97,9 @@ class FirstViewController: UIViewController {
     
     // Firestore 데이터 로드
     private func loadData() {
+        activityIndicator.startAnimating()
         let db = Firestore.firestore()
-        db.collection("posts").getDocuments { snapshot, error in
+        db.collection("posts").order(by: "timestamp",descending: false).getDocuments { snapshot, error in
             if let error = error {
                 print("오류: \(error.localizedDescription)")
                 return
@@ -105,7 +113,10 @@ class FirstViewController: UIViewController {
             var items: [TotalItem] = []
             
             for document in documents {
-                guard let title = document.data()["title"] as? String,
+                let documentId = document.documentID
+                
+                guard let nickname = document.data()["nickname"] as? String,
+                    let title = document.data()["title"] as? String,
                       let price = document.data()["price"] as? String,
                       let content = document.data()["content"] as? String,
                       let timestamp = document.data()["timestamp"] as? Timestamp,
@@ -122,7 +133,7 @@ class FirstViewController: UIViewController {
                     let formattedPrice = self.formatPrice(price)
                     let relativeDate = self.relativeDateString(for: timestamp.dateValue())
                     
-                    let item = Item(image: image, title: title, description: content, price: formattedPrice, date: relativeDate, chatIcon: UIImage(named: "chatIcon"), chatNumber: nil, heartIcon: UIImage(named: "heartIcon"), heartNumber: nil)
+                    let item = Item(id: documentId,nickname: nickname,image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: nil)
                     items.append(TotalItem.item(item))
                     dispatchGroup.leave()
                 }
@@ -131,6 +142,7 @@ class FirstViewController: UIViewController {
             dispatchGroup.notify(queue: .main) {
                 self.totalItems = items
                 self.tableView.reloadData()
+                self.activityIndicator.stopAnimating() 
             }
         }
     }
@@ -170,13 +182,13 @@ class FirstViewController: UIViewController {
         // ItemAddViewController 인스턴스 생성
         let itemAddViewController = ItemAddViewController()
         itemAddViewController.delegate = self // delegate 설정
-
+        
         // UINavigationController로 래핑
         let navigationController = UINavigationController(rootViewController: itemAddViewController)
-
+        
         // 모달 프레젠테이션 스타일을 전체 화면으로 설정
         navigationController.modalPresentationStyle = .fullScreen
-
+        
         // 뷰 컨트롤러를 모달로 프레젠트
         self.present(navigationController, animated: true, completion: nil)
     }
@@ -207,22 +219,12 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
         switch totalItems[indexPath.row] {
         case let .item(item):
             let cell = tableView.dequeueReusableCell(withIdentifier: HomeTableViewCell.id, for: indexPath) as! HomeTableViewCell
-            
+            cell.selectionStyle = .none
             cell.titleLabel.text = item.title
-            cell.descriptionLabel.text = item.description
             cell.priceLabel.text = item.price
             cell.dateLabel.text = item.date
-            cell.chatNumberLabel.text = item.chatNumber
             cell.heartNumberLabel.text = item.heartNumber
-            // 채팅 아이콘과 하트 아이콘 설정
-            if indexPath.row != 0 {
-                cell.chatIcon.image = item.chatIcon
-                cell.heartIcon.image = item.heartIcon
-            } else {
-                cell.chatIcon.image = nil
-                cell.heartIcon.image = nil
-            }
-            
+            cell.heartIcon.image = item.heartIcon
             cell.thumbnailImageView.image = item.image
             
             return cell
@@ -231,6 +233,17 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
             cell.itemList = collectItemList // collectItemList를 설정
             
             return cell
+        }
+        
+    }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        switch totalItems[indexPath.row] {
+        case let .item(item):
+            let detailVC = ItemDetailViewController()
+            detailVC.item = item
+            navigationController?.pushViewController(detailVC, animated: true)
+        case .horizItem(_):
+            break
         }
     }
     
