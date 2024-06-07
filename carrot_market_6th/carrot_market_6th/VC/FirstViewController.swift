@@ -11,8 +11,10 @@ import Then
 import FirebaseFirestore
 
 class FirstViewController: UIViewController {
+    deinit {
+        NotificationCenter.default.removeObserver(self, name: .heartCountDidChange, object: nil)
+    }
     //MARK: -- Property
-//    let itemList = ItemList()
     let collectItemList = HorizItemList()
     let activityIndicator = UIActivityIndicatorView(style: .large).then {
         $0.hidesWhenStopped = true
@@ -48,6 +50,8 @@ class FirstViewController: UIViewController {
         addSubviews()
         setConfig()
         loadData() // Firestore 데이터 로드
+        NotificationCenter.default.addObserver(self, selector: #selector(handleHeartCountDidChange(_:)), name: .heartCountDidChange, object: nil)
+
     }
     
     private func addSubviews() {
@@ -114,7 +118,7 @@ class FirstViewController: UIViewController {
             
             for document in documents {
                 let documentId = document.documentID
-                
+                let heartCount = document.data()["heartCount"] as? Int ?? 0
                 guard let nickname = document.data()["nickname"] as? String,
                     let title = document.data()["title"] as? String,
                       let price = document.data()["price"] as? String,
@@ -133,7 +137,7 @@ class FirstViewController: UIViewController {
                     let formattedPrice = self.formatPrice(price)
                     let relativeDate = self.relativeDateString(for: timestamp.dateValue())
                     
-                    let item = Item(id: documentId,nickname: nickname,image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: nil)
+                    let item = Item(id: documentId,nickname: nickname,image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: "\(heartCount)")
                     items.append(TotalItem.item(item))
                     dispatchGroup.leave()
                 }
@@ -196,7 +200,7 @@ class FirstViewController: UIViewController {
 
 extension FirstViewController: ItemAddViewControllerDelegate {
     func didSaveNewItem() {
-        loadData() // 새 아이템 저장 후 데이터 새로고침
+        loadData() 
     }
 }
 
@@ -223,7 +227,14 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
             cell.titleLabel.text = item.title
             cell.priceLabel.text = item.price
             cell.dateLabel.text = item.date
-            cell.heartNumberLabel.text = item.heartNumber
+            if let heartNumber = item.heartNumber, let heartCount = Int(heartNumber), heartCount > 0 {
+                cell.heartNumberLabel.text = heartNumber
+                cell.heartNumberLabel.isHidden = false
+            } else {
+                cell.heartNumberLabel.text = nil
+                cell.heartNumberLabel.isHidden = true
+            }
+           // cell.heartNumberLabel.text = item.heartNumber
             cell.heartIcon.image = item.heartIcon
             cell.thumbnailImageView.image = item.image
             
@@ -239,7 +250,7 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         switch totalItems[indexPath.row] {
         case let .item(item):
-            let detailVC = ItemDetailViewController()
+            let detailVC = ItemDetailViewController(item: item)
             detailVC.item = item
             navigationController?.pushViewController(detailVC, animated: true)
         case .horizItem(_):
@@ -254,6 +265,25 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
         let searchVC = SearchViewController()
         navigationController?.pushViewController(searchVC, animated: true)
     }
+    
+    @objc private func handleHeartCountDidChange(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let itemId = userInfo["itemId"] as? String,
+              let heartCount = userInfo["heartCount"] as? Int else { return }
+
+        if let index = totalItems.firstIndex(where: {
+            if case let .item(item) = $0 {
+                return item.id == itemId
+            }
+            return false
+        }) {
+            if case var .item(item) = totalItems[index] {
+                item.heartNumber = "\(heartCount)"
+                totalItems[index] = .item(item)
+                tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
+            }
+        }
+    }
 }
 
 extension UIImage {
@@ -264,3 +294,5 @@ extension UIImage {
         }
     }
 }
+
+

@@ -10,6 +10,7 @@ import SnapKit
 import FirebaseFirestore
 import FirebaseAuth
 
+
 class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     var item: Item?
     private let titleLabel = UILabel()
@@ -19,7 +20,6 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     private let imageView = UIImageView()
     let scrollView = UIScrollView()
     let pageControl = UIPageControl()
-    let purchaseView = PurchaseView()
     let heartIcon = UIButton()
     let purchaseButton = UIButton()
     private let navigationBar = NavigationBar()
@@ -30,6 +30,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     private let seperatedView = SeperatedView(height: 1)
     private var images = [UIImage]()
     private let contentView = UIView()
+    let purchaseView: PurchaseView
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
@@ -44,7 +45,15 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         addContentScrollView()
         
     }
+    init(item: Item) {
+        self.item = item
+        self.purchaseView = PurchaseView(itemId: item.id)
+        super.init(nibName: nil, bundle: nil)
+    }
     
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tabBarController?.tabBar.isHidden = true
@@ -56,12 +65,6 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         tabBarController?.tabBar.isHidden = false
     }
     
-//    func setnavigationBar() {
-//        view.backgroundColor = .white
-//        navigationBarBackgroundView.backgroundColor = .white
-//        self.navigationBarBackgroundView.layer.opacity = 0
-//        self.navigationController?.navigationBar.barStyle = .black
-//    }
     private func setUI() {
         profileImage.do {
             $0.image = UIImage.init(named: "profile")

@@ -10,9 +10,10 @@ import UIKit
 import SnapKit
 import Then
 import FirebaseFirestore
+import FirebaseAuth
 
-final class PurchaseView : UIView {
-    var item: Item?
+final class PurchaseView: UIView {
+    var itemId: String?
     private let seperatedView = SeperatedView(height: 1)
     let addCartButton = UIButton()
     let heartButton = UIButton()
@@ -21,28 +22,28 @@ final class PurchaseView : UIView {
     let priceInfoLabel = UILabel()
     private var isHeartSelected = false
     private var heartCount: Int = 0
-    init() {
-        super.init(frame: .zero)
-            setUI()
-            
-            setHierarchy()
-            
-            setLayout()
-        
-            setTarget()
-        
-        }
-        @available(*, unavailable)
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
     
+    init(itemId: String?) {
+        self.itemId = itemId
+        super.init(frame: .zero)
+        setUI()
+        setHierarchy()
+        setLayout()
+        setTarget()
+        checkHeartStatus()
+    }
+    
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 }
+
 private extension PurchaseView {
     func setUI() {
         backgroundColor = .white
         heartButton.do {
-            $0.setImage(UIImage.init(named: "heart"), for: .normal)
+            $0.setImage(UIImage(named: "heart"), for: .normal)
             $0.tintColor = .gray
         }
         addCartButton.do {
@@ -67,8 +68,7 @@ private extension PurchaseView {
     }
     
     func setHierarchy() {
-        addSubviews(seperatedView,heartButton,addCartButton,verticalView,priceLabel,priceInfoLabel)
-        
+        addSubviews(seperatedView, heartButton, addCartButton, verticalView, priceLabel, priceInfoLabel)
     }
     
     func setLayout() {
@@ -86,7 +86,6 @@ private extension PurchaseView {
             make.width.equalTo(100)
             make.top.equalToSuperview().inset(10)
             make.trailing.equalToSuperview().inset(15)
-            
         }
         verticalView.snp.makeConstraints { make in
             make.width.equalTo(1)
@@ -98,13 +97,10 @@ private extension PurchaseView {
             make.top.equalTo(verticalView.snp.top).offset(10)
             make.width.equalTo(130)
         }
-        
         priceInfoLabel.snp.makeConstraints { make in
             make.leading.equalTo(priceLabel.snp.leading)
             make.top.equalTo(priceLabel.snp.bottom)
-            
         }
-        
     }
     
     func setTarget() {
@@ -115,12 +111,11 @@ private extension PurchaseView {
         isHeartSelected.toggle()
         let imageName = isHeartSelected ? "fillHeart" : "heart"
         heartButton.setImage(UIImage(named: imageName), for: .normal)
-        updateHeartCount(increment: isHeartSelected)
-
+        updateHeartStatus(increment: isHeartSelected)
     }
     
     private func updateHeartCount(increment: Bool) {
-        guard let itemID = item?.id else { return }
+        guard let itemID = itemId else { return }
         let db = Firestore.firestore()
         let incrementValue = increment ? 1 : -1
         db.collection("posts").document(itemID).updateData([
@@ -131,7 +126,62 @@ private extension PurchaseView {
             } else {
                 print("Heart count updated successfully")
                 self.heartCount += incrementValue
+                NotificationCenter.default.post(name: .heartCountDidChange, object: nil, userInfo: ["itemId": self.itemId, "heartCount": self.heartCount])
+
             }
         }
     }
+    
+    private func updateHeartStatus(increment: Bool) {
+        guard let itemID = itemId else {
+            print("Item ID is nil.")
+            return
+        }
+        guard let userID = Auth.auth().currentUser?.uid else {
+            print("User ID is nil.")
+            return
+        }
+        let db = Firestore.firestore()
+        let userRef = db.collection("posts").document(itemID).collection("hearts").document(userID)
+        
+        if increment {
+            userRef.setData([:]) { error in
+                if let error = error {
+                    print("Error adding heart: \(error.localizedDescription)")
+                } else {
+                    print("Heart added successfully")
+                    self.updateHeartCount(increment: true)
+                }
+            }
+        } else {
+            userRef.delete { error in
+                if let error = error {
+                    print("Error removing heart: \(error.localizedDescription)")
+                } else {
+                    print("Heart removed successfully")
+                    self.updateHeartCount(increment: false)
+                }
+            }
+        }
+    }
+    
+    private func checkHeartStatus() {
+        guard let itemID = itemId else { return }
+        guard let userID = Auth.auth().currentUser?.uid else { return }
+        let db = Firestore.firestore()
+        let userRef = db.collection("posts").document(itemID).collection("hearts").document(userID)
+
+        userRef.getDocument { document, error in
+            if let document = document, document.exists {
+                self.isHeartSelected = true
+                self.heartButton.setImage(UIImage(named: "fillHeart"), for: .normal)
+            } else {
+                self.isHeartSelected = false
+                self.heartButton.setImage(UIImage(named: "heart"), for: .normal)
+            }
+        }
+    }
+}
+extension Notification.Name {
+    static let heartCountDidChange = Notification.Name("heartCountDidChange")
 }

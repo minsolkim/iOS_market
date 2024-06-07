@@ -263,7 +263,6 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         guard let title = titleTextField.text, !title.isEmpty,
               let price = contentTextField.text, !price.isEmpty,
               let content = fullContentTextField.text, !content.isEmpty, content != "텍스트 뷰 플레이스 홀더" else {
-            // Show an alert if any required field is empty
             showAlert(message: "모든 필드를 채워주세요.")
             return
         }
@@ -297,22 +296,29 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
                 "content": content,
                 "timestamp": Timestamp(date: Date()),
                 "imageUrls": imageUrls,
-                "nickname" : nickname,
-                "heartCount" : 0
+                "nickname": nickname,
+                "heartCount": 0,
+                "hearts": [] // heart 상태를 관리할 필드
             ]
             
             let db = Firestore.firestore()
-            db.collection("posts").addDocument(data: postData) { error in
+            var ref: DocumentReference? = nil
+            ref = db.collection("posts").addDocument(data: postData) { error in
                 if let error = error {
                     self.showAlert(message: "데이터를 저장하는 데 실패했습니다: \(error.localizedDescription)")
                 } else {
+                    if let documentID = ref?.documentID {
+                        print("Document ID: \(documentID)")
+                        // Do something with the documentID if needed
+                    }
                     self.delegate?.didSaveNewItem()
                     self.dismiss(animated: true)
                 }
             }
         }
     }
-    
+
+
     @objc func keyboardWillShow(notification: NSNotification) {
         if let keyboardSize = (notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue {
             let keyboardHeight = keyboardSize.height

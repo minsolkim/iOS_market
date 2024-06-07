@@ -35,18 +35,19 @@ class HomeTableViewCell: UITableViewCell {
     }
     let horizontalStackView = UIStackView().then {
         $0.axis = .horizontal
-        $0.distribution = .fill
-        $0.alignment = .fill
+        $0.distribution = .fillEqually
+        $0.alignment = .center
         $0.spacing = 5
     }
     
     let heartIcon = UIImageView().then {
         $0.image = UIImage(named: "heartIcon")
+        
     }
     
     let heartNumberLabel = UILabel().then {
         $0.font = .systemFont(ofSize: 14)
-        $0.textColor = .gray
+        $0.textColor = UIColor.warmgray
         $0.numberOfLines = 0
     }
     
@@ -59,13 +60,7 @@ class HomeTableViewCell: UITableViewCell {
         NSLayoutConstraint.activate([
                    contentView.heightAnchor.constraint(equalToConstant: 140)
                ])
-        contentView.addSubview(thumbnailImageView)
-        contentView.addSubview(titleLabel)
-        contentView.addSubview(dateLabel)
-        contentView.addSubview(priceLabel)
-        contentView.addSubview(horizontalStackView)
-        horizontalStackView.addArrangedSubview(heartIcon)
-        horizontalStackView.addArrangedSubview(heartNumberLabel)
+        contentView.addSubviews(thumbnailImageView,titleLabel,dateLabel,priceLabel,heartIcon,heartNumberLabel)
         
         thumbnailImageView.snp.makeConstraints {
             $0.top.leading.equalToSuperview().inset(10)
@@ -88,13 +83,20 @@ class HomeTableViewCell: UITableViewCell {
             $0.top.equalTo(dateLabel.snp.bottom).offset(5)
             $0.leading.equalTo(dateLabel.snp.leading)
         }
-        
-        horizontalStackView.snp.makeConstraints {
+
+        heartIcon.snp.makeConstraints {
+            $0.width.height.equalTo(15)
+            $0.trailing.equalTo(heartNumberLabel.snp.leading).inset(-10)
             $0.bottom.equalToSuperview().inset(10)
-            $0.width.equalTo(80)
-            $0.trailing.equalToSuperview().inset(10)
+        }
+        heartNumberLabel.snp.makeConstraints {
+            $0.trailing.equalToSuperview().inset(5)
+            $0.centerY.equalTo(heartIcon.snp.centerY)
+            //$0.bottom.equalToSuperview().inset(7)
+            $0.width.equalTo(25)
         }
     }
+    
     override func awakeFromNib() {
         super.awakeFromNib()
         
@@ -102,7 +104,6 @@ class HomeTableViewCell: UITableViewCell {
     
     override func setSelected(_ selected: Bool, animated: Bool) {
         super.setSelected(selected, animated: animated)
-        
         
     }
     
