@@ -137,7 +137,7 @@ class FirstViewController: UIViewController {
                     let formattedPrice = self.formatPrice(price)
                     let relativeDate = self.relativeDateString(for: timestamp.dateValue())
                     
-                    let item = Item(id: documentId,nickname: nickname,image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: "\(heartCount)")
+                    let item = Item(id: documentId,nickname: nickname,image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: "\(heartCount)",isCompleted: false)
                     items.append(TotalItem.item(item))
                     dispatchGroup.leave()
                 }
@@ -163,7 +163,8 @@ class FirstViewController: UIViewController {
     }
     //가격 포맷 함수
     private func formatPrice(_ price: String) -> String {
-        return "\(price) 원"
+        let formattedPrice = price.dropFirst()
+        return "\(formattedPrice) 원"
     }
     // 상대적 시간 포맷 함수
     private func relativeDateString(for date: Date) -> String {

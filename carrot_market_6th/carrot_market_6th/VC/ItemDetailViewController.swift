@@ -9,8 +9,6 @@ import UIKit
 import SnapKit
 import FirebaseFirestore
 import FirebaseAuth
-
-
 class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     var item: Item?
     private let titleLabel = UILabel()
@@ -18,32 +16,33 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     private let priceLabel = UILabel()
     private let dateLabel = UILabel()
     private let imageView = UIImageView()
-    let scrollView = UIScrollView()
-    let pageControl = UIPageControl()
-    let heartIcon = UIButton()
-    let purchaseButton = UIButton()
+    private let scrollView = UIScrollView()
+    private let pageControl = UIPageControl()
+    private let heartIcon = UIButton()
+    private let purchaseButton = UIButton()
     private let navigationBar = NavigationBar()
 //    private let navigationBarBackgroundView = UIView()
-    let profileImage = UIImageView()
-    let profileName = UILabel()
-    let profileLocation = UILabel()
+    private let profileImage = UIImageView()
+    private let profileName = UILabel()
+    private let profileLocation = UILabel()
     private let seperatedView = SeperatedView(height: 1)
     private var images = [UIImage]()
     private let contentView = UIView()
-    let purchaseView: PurchaseView
+    private let statusButton = UIButton()
+    private let purchaseView: PurchaseView
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         scrollView.delegate = self
+        //setupStatusButton()
         setupViews()
         setupConstraints()
-        //setnavigationBar()
         setUI()
         setPageControl()
         loadImageUrls()
         configureView()
         addContentScrollView()
-        
+        checkIfCurrentUserIsAuthor()
     }
     init(item: Item) {
         self.item = item
@@ -64,7 +63,21 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         super.viewWillDisappear(animated)
         tabBarController?.tabBar.isHidden = false
     }
-    
+    private func setupStatusButton() {
+        statusButton.setTitle("판매중", for: .normal) // 초기 텍스트 설정
+        statusButton.setTitleColor(.black, for: .normal)
+        statusButton.layer.borderColor = UIColor.warmgray.cgColor
+        statusButton.layer.borderWidth = 1
+        statusButton.layer.cornerRadius = 10
+        statusButton.layer.masksToBounds = true
+        statusButton.setImage(UIImage(systemName: "chevron.down"), for: .normal)
+        statusButton.tintColor = .black
+        statusButton.semanticContentAttribute = .forceRightToLeft
+        statusButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: -8)
+        statusButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        
+        statusButton.addTarget(self, action: #selector(showStatusMenu), for: .touchUpInside)
+    }
     private func setUI() {
         profileImage.do {
             $0.image = UIImage.init(named: "profile")
@@ -95,7 +108,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     }
     private func setupViews() {
         view.addSubviews(navigationBar,purchaseView)
-        view.addSubviews(scrollView, pageControl, profileImage, profileName, seperatedView, titleLabel, dateLabel, descriptionLabel)
+        view.addSubviews(scrollView, pageControl, profileImage, profileName, seperatedView, titleLabel, dateLabel, descriptionLabel,statusButton)
     }
     
     private func setupConstraints() {
@@ -131,9 +144,12 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             make.leading.trailing.equalToSuperview().inset(20)
             make.top.equalTo(profileImage.snp.bottom).offset(10)
         }
-        
-        titleLabel.snp.makeConstraints { make in
+        statusButton.snp.makeConstraints { make in
             make.top.equalTo(seperatedView.snp.bottom).offset(10)
+            make.leading.equalTo(seperatedView.snp.leading)
+        }
+        titleLabel.snp.makeConstraints { make in
+            make.top.equalTo(statusButton.snp.bottom).offset(16)
             make.leading.equalTo(seperatedView.snp.leading)
         }
         
@@ -153,6 +169,8 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             make.leading.trailing.equalToSuperview()
             make.height.equalTo(90)
         }
+        
+        
     }
     private func addContentScrollView() {
         scrollView.isPagingEnabled = true
@@ -235,6 +253,78 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         dateLabel.text = item.date
         imageView.image = item.image
         purchaseView.priceLabel.text = item.price
+    }
+    
+    private func checkIfCurrentUserIsAuthor() {
+        guard let currentUserID = Auth.auth().currentUser?.uid else { return }
+        let db = Firestore.firestore()
+        db.collection("users").document(currentUserID).getDocument { (document, error) in
+            if let document = document, document.exists {
+                if let currentUserNickname = document.data()?["nickname"] as? String,
+                   let itemNickname = self.item?.nickname {
+                    // Convert both nicknames to lowercase for comparison
+                    let lowercasedCurrentUserNickname = currentUserNickname.lowercased()
+                    let lowercasedItemNickname = itemNickname.lowercased()
+                    
+                    if lowercasedCurrentUserNickname == lowercasedItemNickname {
+                        self.statusButton.isHidden = false
+                        self.setupStatusButton()
+                    } else {
+                        self.statusButton.isHidden = true
+                    }
+                }
+            } else {
+                print("Document does not exist")
+            }
+        }
+    }
+
+    private func updateStatus(isCompleted: Bool) {
+        guard let itemId = item?.id else {
+            print("Item ID is nil")
+            return
+        }
+        
+        let statusText = isCompleted ? "거래완료" : "판매중"
+        statusButton.setTitle(statusText, for: .normal)
+        
+        let db = Firestore.firestore()
+        let itemRef = db.collection("posts").document(itemId)
+
+        itemRef.getDocument { (document, error) in
+            if let document = document, document.exists {
+                // 문서가 존재하면 업데이트 수행
+                itemRef.updateData(["isCompleted": isCompleted]) { error in
+                    if let error = error {
+                        print("Failed to update item status: \(error)")
+                    } else {
+                        print("Item status successfully updated to \(statusText)")
+                    }
+                }
+            } else {
+                print("Document does not exist")
+            }
+        }
+    }
+
+    @objc private func showStatusMenu() {
+        let alertController = UIAlertController(title: "상태 변경", message: nil, preferredStyle: .actionSheet)
+        
+        let saleAction = UIAlertAction(title: "판매중", style: .default) { _ in
+            self.updateStatus(isCompleted: false)
+        }
+        
+        let completedAction = UIAlertAction(title: "거래완료", style: .default) { _ in
+            self.updateStatus(isCompleted: true)
+        }
+        
+        let cancelAction = UIAlertAction(title: "닫기", style: .cancel, handler: nil)
+        
+        alertController.addAction(saleAction)
+        alertController.addAction(completedAction)
+        alertController.addAction(cancelAction)
+        
+        present(alertController, animated: true, completion: nil)
     }
 }
 

@@ -48,7 +48,7 @@ class SearchViewController: UIViewController {
             $0.backgroundColor = UIColor.warmgray2
             $0.layer.cornerRadius = 10
             $0.layer.masksToBounds = true
-            $0.placeholder = "신림동 근처에서 검색"
+            $0.placeholder = "내 근처에서 검색"
             $0.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: searchTextField.frame.height))
             $0.leftViewMode = .always
             $0.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
@@ -143,7 +143,7 @@ class SearchViewController: UIViewController {
             for document in documents {
                 let documentId = document.documentID
                 guard let nickname = document.data()["nickname"] as? String,
-                    let title = document.data()["title"] as? String,
+                      let title = document.data()["title"] as? String,
                       let price = document.data()["price"] as? String,
                       let content = document.data()["content"] as? String,
                       let timestamp = document.data()["timestamp"] as? Timestamp,
@@ -158,7 +158,7 @@ class SearchViewController: UIViewController {
                     let formattedPrice = self.formatPrice(price)
                     let relativeDate = self.relativeDateString(for: timestamp.dateValue())
                     
-                    let item = Item(id: documentId,nickname: nickname, image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: nil)
+                    let item = Item(id: documentId,nickname: nickname, image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: nil,isCompleted: false)
                     items.append(item)
                     dispatchGroup.leave()
                 }
@@ -171,7 +171,7 @@ class SearchViewController: UIViewController {
             }
         }
     }
-
+    
     private func downloadImage(from url: URL, completion: @escaping (UIImage?) -> Void) {
         URLSession.shared.dataTask(with: url) { data, response, error in
             if let data = data, let image = UIImage(data: data) {
@@ -218,7 +218,15 @@ extension SearchViewController: UITableViewDataSource, UITableViewDelegate {
         cell.thumbnailImageView.image = item.image
         return cell
     }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let item = filteredItems[indexPath.row]
+        let detailVC = ItemDetailViewController(item: item)
+        detailVC.item = item
+        navigationController?.pushViewController(detailVC, animated: true)
+        
+    }
 }
+
 
 
 

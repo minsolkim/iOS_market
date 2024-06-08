@@ -298,7 +298,8 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
                 "imageUrls": imageUrls,
                 "nickname": nickname,
                 "heartCount": 0,
-                "hearts": [] // heart 상태를 관리할 필드
+                "hearts": [], // heart 상태를 관리할 필드
+                "isCompleted" : false
             ]
             
             let db = Firestore.firestore()

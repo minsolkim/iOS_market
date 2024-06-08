@@ -23,6 +23,13 @@ class HomeTableViewCell: UITableViewCell {
         $0.textAlignment = .left
     }
     
+    let finishLabel = UILabel().then {
+        $0.font = .systemFont(ofSize: 13)
+        $0.layer.backgroundColor = UIColor.darkGray.cgColor
+        $0.textColor = .white
+        $0.text = "거래완료"
+    }
+    
     let priceLabel = UILabel().then {
         $0.font = .boldSystemFont(ofSize: 14)
         $0.numberOfLines = 0
@@ -92,7 +99,6 @@ class HomeTableViewCell: UITableViewCell {
         heartNumberLabel.snp.makeConstraints {
             $0.trailing.equalToSuperview().inset(5)
             $0.centerY.equalTo(heartIcon.snp.centerY)
-            //$0.bottom.equalToSuperview().inset(7)
             $0.width.equalTo(25)
         }
     }
