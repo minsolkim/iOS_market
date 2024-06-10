@@ -21,7 +21,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     private let heartIcon = UIButton()
     private let purchaseButton = UIButton()
     private let navigationBar = NavigationBar()
-//    private let navigationBarBackgroundView = UIView()
+    private let navigationBarBackgroundView = UIView()
     private let profileImage = UIImageView()
     private let profileName = UILabel()
     private let profileLocation = UILabel()
@@ -34,7 +34,6 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         super.viewDidLoad()
         view.backgroundColor = .white
         scrollView.delegate = self
-        //setupStatusButton()
         setupViews()
         setupConstraints()
         setUI()
@@ -43,6 +42,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         configureView()
         addContentScrollView()
         checkIfCurrentUserIsAuthor()
+        setupCustomNavigationBar()
     }
     init(item: Item) {
         self.item = item
@@ -56,7 +56,6 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         tabBarController?.tabBar.isHidden = true
-
     }
     
     override func viewWillDisappear(_ animated: Bool) {
@@ -106,18 +105,28 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             $0.backgroundColor = .clear
         }
     }
+    private func setupCustomNavigationBar() {
+        navigationItem.hidesBackButton = true
+
+        let backButton = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(backButtonTapped))
+        let homeButton = UIBarButtonItem(image: UIImage(systemName: "house"), style: .plain, target: self, action: #selector(homeButtonTapped))
+        navigationController?.navigationBar.tintColor = .white
+        navigationItem.leftBarButtonItems = [backButton, homeButton]
+    }
+    
+    @objc private func backButtonTapped() {
+        navigationController?.popViewController(animated: true)
+    }
+    
+    @objc private func homeButtonTapped() {
+        navigationController?.popToRootViewController(animated: true)
+    }
     private func setupViews() {
-        view.addSubviews(navigationBar,purchaseView)
+        view.addSubviews(purchaseView)
         view.addSubviews(scrollView, pageControl, profileImage, profileName, seperatedView, titleLabel, dateLabel, descriptionLabel,statusButton)
     }
     
     private func setupConstraints() {
-        
-        navigationBar.snp.makeConstraints { make in
-            make.top.leading.trailing.equalToSuperview()
-            make.height.equalTo(97)
-        }
-        
         scrollView.snp.makeConstraints { make in
             make.top.equalToSuperview()
             make.leading.trailing.equalToSuperview()
@@ -169,32 +178,31 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             make.leading.trailing.equalToSuperview()
             make.height.equalTo(90)
         }
-        
-        
     }
+    
     private func addContentScrollView() {
         scrollView.isPagingEnabled = true
         for i in 0..<images.count {
-                let imageView = UIImageView()
-                let xPos = scrollView.frame.width * CGFloat(i)
-                imageView.frame = CGRect(x: xPos, y: 0, width: scrollView.bounds.width, height: scrollView.bounds.height)
-                imageView.image = images[i]
-                imageView.contentMode = .scaleAspectFit
-                scrollView.addSubview(imageView)
-                scrollView.contentSize = CGSize(width: scrollView.frame.width * CGFloat(images.count), height: scrollView.frame.height)
-            }
-            
+            let imageView = UIImageView()
+            let xPos = scrollView.frame.width * CGFloat(i)
+            imageView.frame = CGRect(x: xPos, y: 0, width: scrollView.bounds.width, height: scrollView.bounds.height)
+            imageView.image = images[i]
+            imageView.contentMode = .scaleAspectFit
+            scrollView.addSubview(imageView)
+            scrollView.contentSize = CGSize(width: scrollView.frame.width * CGFloat(images.count), height: scrollView.frame.height)
         }
         
-        private func setPageControl() {
-            pageControl.numberOfPages = images.count
-            
-        }
+    }
+    
+    private func setPageControl() {
+        pageControl.numberOfPages = images.count
         
-        private func setPageControlSelectedPage(currentPage:Int) {
-            pageControl.currentPage = currentPage
-        }
-        
+    }
+    
+    private func setPageControlSelectedPage(currentPage:Int) {
+        pageControl.currentPage = currentPage
+    }
+    
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView.frame.size.width > 0 else { return }
         
@@ -278,7 +286,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             }
         }
     }
-
+    
     private func updateStatus(isCompleted: Bool) {
         guard let itemId = item?.id else {
             print("Item ID is nil")
@@ -290,7 +298,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         
         let db = Firestore.firestore()
         let itemRef = db.collection("posts").document(itemId)
-
+        
         itemRef.getDocument { (document, error) in
             if let document = document, document.exists {
                 // 문서가 존재하면 업데이트 수행
@@ -306,7 +314,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             }
         }
     }
-
+    
     @objc private func showStatusMenu() {
         let alertController = UIAlertController(title: "상태 변경", message: nil, preferredStyle: .actionSheet)
         

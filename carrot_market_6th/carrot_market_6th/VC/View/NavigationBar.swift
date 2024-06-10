@@ -41,13 +41,13 @@ final class NavigationBar : UIView {
 
 private extension NavigationBar {
     func setUI() {
-        
+        backgroundColor = .clear
+        tintColor = .white
     }
     
     func setHierarchy() {
         addSubview(backButton)
         addSubview(homeButton)
-        backgroundColor = .clear
     }
     
     func setLayout() {
