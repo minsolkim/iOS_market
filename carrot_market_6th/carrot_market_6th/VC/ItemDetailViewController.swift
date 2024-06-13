@@ -62,21 +62,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         super.viewWillDisappear(animated)
         tabBarController?.tabBar.isHidden = false
     }
-    private func setupStatusButton() {
-        statusButton.setTitle("판매중", for: .normal) // 초기 텍스트 설정
-        statusButton.setTitleColor(.black, for: .normal)
-        statusButton.layer.borderColor = UIColor.warmgray.cgColor
-        statusButton.layer.borderWidth = 1
-        statusButton.layer.cornerRadius = 10
-        statusButton.layer.masksToBounds = true
-        statusButton.setImage(UIImage(systemName: "chevron.down"), for: .normal)
-        statusButton.tintColor = .black
-        statusButton.semanticContentAttribute = .forceRightToLeft
-        statusButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: -8)
-        statusButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
-        
-        statusButton.addTarget(self, action: #selector(showStatusMenu), for: .touchUpInside)
-    }
+
     private func setUI() {
         profileImage.do {
             $0.image = UIImage.init(named: "profile")
@@ -153,14 +139,14 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             make.leading.trailing.equalToSuperview().inset(20)
             make.top.equalTo(profileImage.snp.bottom).offset(10)
         }
-        statusButton.snp.makeConstraints { make in
-            make.top.equalTo(seperatedView.snp.bottom).offset(10)
-            make.leading.equalTo(seperatedView.snp.leading)
-        }
-        titleLabel.snp.makeConstraints { make in
-            make.top.equalTo(statusButton.snp.bottom).offset(16)
-            make.leading.equalTo(seperatedView.snp.leading)
-        }
+//        statusButton.snp.makeConstraints { make in
+//            make.top.equalTo(seperatedView.snp.bottom).offset(10)
+//            make.leading.equalTo(seperatedView.snp.leading)
+//        }
+//        titleLabel.snp.makeConstraints { make in
+//            make.top.equalTo(statusButton.snp.bottom).offset(16)
+//            make.leading.equalTo(seperatedView.snp.leading)
+//        }
         
         dateLabel.snp.makeConstraints { make in
             make.top.equalTo(titleLabel.snp.bottom).offset(10)
@@ -263,6 +249,21 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         purchaseView.priceLabel.text = item.price
     }
     
+    private func setupStatusButton() {
+        statusButton.setTitle("판매중", for: .normal) // 초기 텍스트 설정
+        statusButton.setTitleColor(.black, for: .normal)
+        statusButton.layer.borderColor = UIColor.warmgray.cgColor
+        statusButton.layer.borderWidth = 1
+        statusButton.layer.cornerRadius = 10
+        statusButton.layer.masksToBounds = true
+        statusButton.setImage(UIImage(systemName: "chevron.down"), for: .normal)
+        statusButton.tintColor = .black
+        statusButton.semanticContentAttribute = .forceRightToLeft
+        statusButton.imageEdgeInsets = UIEdgeInsets(top: 0, left: 8, bottom: 0, right: -8)
+        statusButton.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        
+        statusButton.addTarget(self, action: #selector(showStatusMenu), for: .touchUpInside)
+    }
     private func checkIfCurrentUserIsAuthor() {
         guard let currentUserID = Auth.auth().currentUser?.uid else { return }
         let db = Firestore.firestore()
@@ -270,15 +271,28 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             if let document = document, document.exists {
                 if let currentUserNickname = document.data()?["nickname"] as? String,
                    let itemNickname = self.item?.nickname {
-                    // Convert both nicknames to lowercase for comparison
                     let lowercasedCurrentUserNickname = currentUserNickname.lowercased()
                     let lowercasedItemNickname = itemNickname.lowercased()
                     
                     if lowercasedCurrentUserNickname == lowercasedItemNickname {
                         self.statusButton.isHidden = false
                         self.setupStatusButton()
+                        let statusText = self.item?.isCompleted == true ? "거래완료" : "판매중"
+                        self.statusButton.setTitle(statusText, for: .normal)
+                        self.statusButton.snp.makeConstraints { make in
+                            make.top.equalTo(self.seperatedView.snp.bottom).offset(10)
+                            make.leading.equalTo(self.seperatedView.snp.leading)
+                        }
+                        self.titleLabel.snp.makeConstraints { make in
+                            make.top.equalTo(self.statusButton.snp.bottom).offset(16)
+                            make.leading.equalTo(self.seperatedView.snp.leading)
+                        }
                     } else {
                         self.statusButton.isHidden = true
+                        self.titleLabel.snp.makeConstraints { make in
+                            make.top.equalTo(self.seperatedView.snp.bottom).offset(10)
+                            make.leading.equalTo(self.seperatedView.snp.leading)
+                        }
                     }
                 }
             } else {

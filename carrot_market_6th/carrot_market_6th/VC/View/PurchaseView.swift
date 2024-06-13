@@ -84,7 +84,7 @@ private extension PurchaseView {
         addCartButton.snp.makeConstraints { make in
             make.height.equalTo(45)
             make.width.equalTo(100)
-            make.top.equalToSuperview().inset(10)
+            make.centerY.equalToSuperview()
             make.trailing.equalToSuperview().inset(15)
         }
         verticalView.snp.makeConstraints { make in

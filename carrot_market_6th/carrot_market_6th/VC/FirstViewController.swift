@@ -228,6 +228,7 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
             cell.titleLabel.text = item.title
             cell.priceLabel.text = item.price
             cell.dateLabel.text = item.date
+            cell.isCompleted = item.isCompleted ?? false
             if let heartNumber = item.heartNumber, let heartCount = Int(heartNumber), heartCount > 0 {
                 cell.heartNumberLabel.text = heartNumber
                 cell.heartNumberLabel.isHidden = false

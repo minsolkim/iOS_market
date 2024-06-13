@@ -24,9 +24,11 @@ class HomeTableViewCell: UITableViewCell {
     }
     
     let finishLabel = UILabel().then {
-        $0.font = .systemFont(ofSize: 13)
+        $0.font = .boldSystemFont(ofSize: 12)
         $0.layer.backgroundColor = UIColor.darkGray.cgColor
         $0.textColor = .white
+        $0.layer.cornerRadius = 10
+        $0.layer.masksToBounds = true
         $0.text = "거래완료"
     }
     
@@ -58,16 +60,24 @@ class HomeTableViewCell: UITableViewCell {
         $0.numberOfLines = 0
     }
     
+    var isCompleted: Bool = false {
+        didSet {
+            updateUI()
+        }
+    }
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-
         NSLayoutConstraint.activate([
-                   contentView.heightAnchor.constraint(equalToConstant: 140)
-               ])
-        contentView.addSubviews(thumbnailImageView,titleLabel,dateLabel,priceLabel,heartIcon,heartNumberLabel)
+            contentView.heightAnchor.constraint(equalToConstant: 140)
+        ])
+        setupUI()
+    }
+    private func setupUI() {
+        
+        contentView.addSubviews(finishLabel, thumbnailImageView, titleLabel, dateLabel, priceLabel, heartIcon, heartNumberLabel)
         
         thumbnailImageView.snp.makeConstraints {
             $0.top.leading.equalToSuperview().inset(10)
@@ -86,23 +96,40 @@ class HomeTableViewCell: UITableViewCell {
             $0.leading.equalTo(titleLabel.snp.leading)
         }
         
-        priceLabel.snp.makeConstraints {
-            $0.top.equalTo(dateLabel.snp.bottom).offset(5)
-            $0.leading.equalTo(dateLabel.snp.leading)
-        }
-
         heartIcon.snp.makeConstraints {
             $0.width.height.equalTo(15)
             $0.trailing.equalTo(heartNumberLabel.snp.leading).inset(-10)
             $0.bottom.equalToSuperview().inset(10)
         }
+        
         heartNumberLabel.snp.makeConstraints {
             $0.trailing.equalToSuperview().inset(5)
             $0.centerY.equalTo(heartIcon.snp.centerY)
             $0.width.equalTo(25)
         }
+        
+        updateUI()
     }
     
+    private func updateUI() {
+        if isCompleted {
+            finishLabel.isHidden = false
+            priceLabel.snp.remakeConstraints {
+                $0.top.equalTo(dateLabel.snp.bottom).offset(5)
+                $0.leading.equalTo(finishLabel.snp.trailing).offset(10)
+            }
+            finishLabel.snp.remakeConstraints {
+                $0.top.equalTo(dateLabel.snp.bottom).offset(5)
+                $0.leading.equalTo(dateLabel.snp.leading)
+            }
+        } else {
+            finishLabel.isHidden = true
+            priceLabel.snp.remakeConstraints {
+                $0.top.equalTo(dateLabel.snp.bottom).offset(5)
+                $0.leading.equalTo(dateLabel.snp.leading)
+            }
+        }
+    }
     override func awakeFromNib() {
         super.awakeFromNib()
         
