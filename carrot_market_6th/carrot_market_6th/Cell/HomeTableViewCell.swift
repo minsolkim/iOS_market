@@ -8,6 +8,8 @@
 import UIKit
 import Then
 import SnapKit
+import Firebase
+import FirebaseFirestore
 
 class HomeTableViewCell: UITableViewCell {
     static let id = "HomeTableViewCell"
@@ -23,11 +25,11 @@ class HomeTableViewCell: UITableViewCell {
         $0.textAlignment = .left
     }
     
-    let finishLabel = UILabel().then {
+    let finishLabel = PaddedLabel().then {
         $0.font = .boldSystemFont(ofSize: 12)
         $0.layer.backgroundColor = UIColor.darkGray.cgColor
         $0.textColor = .white
-        $0.layer.cornerRadius = 10
+        $0.layer.cornerRadius = 7
         $0.layer.masksToBounds = true
         $0.text = "거래완료"
     }
@@ -116,7 +118,7 @@ class HomeTableViewCell: UITableViewCell {
             finishLabel.isHidden = false
             priceLabel.snp.remakeConstraints {
                 $0.top.equalTo(dateLabel.snp.bottom).offset(5)
-                $0.leading.equalTo(finishLabel.snp.trailing).offset(10)
+                $0.leading.equalTo(finishLabel.snp.trailing).offset(5)
             }
             finishLabel.snp.remakeConstraints {
                 $0.top.equalTo(dateLabel.snp.bottom).offset(5)

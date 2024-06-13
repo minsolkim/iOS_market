@@ -18,7 +18,7 @@ struct Item {
     let date: String?
     let heartIcon: UIImage?
     var heartNumber: String?
-    var isCompleted: Bool?
+    var isCompleted: Bool
     
     init(id: String,nickname: String,image: UIImage?, title: String, description: String, price: String?, date: String?,heartIcon: UIImage?, heartNumber: String?, isCompleted: Bool ) {
         self.id = id

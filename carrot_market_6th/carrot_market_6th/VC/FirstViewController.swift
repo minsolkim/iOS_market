@@ -51,7 +51,7 @@ class FirstViewController: UIViewController {
         setConfig()
         loadData() // Firestore 데이터 로드
         NotificationCenter.default.addObserver(self, selector: #selector(handleHeartCountDidChange(_:)), name: .heartCountDidChange, object: nil)
-
+        
     }
     
     private func addSubviews() {
@@ -119,14 +119,16 @@ class FirstViewController: UIViewController {
             for document in documents {
                 let documentId = document.documentID
                 let heartCount = document.data()["heartCount"] as? Int ?? 0
+                let isCompleted = document.data()["isCompleted"] as? Bool ?? false
                 guard let nickname = document.data()["nickname"] as? String,
-                    let title = document.data()["title"] as? String,
+                      let title = document.data()["title"] as? String,
                       let price = document.data()["price"] as? String,
                       let content = document.data()["content"] as? String,
                       let timestamp = document.data()["timestamp"] as? Timestamp,
                       let imageUrls = document.data()["imageUrls"] as? [String],
                       let imageUrlString = imageUrls.first,
-                      let imageUrl = URL(string: imageUrlString) else {
+                      let imageUrl = URL(string: imageUrlString)
+                else {
                     continue
                 }
                 
@@ -137,7 +139,7 @@ class FirstViewController: UIViewController {
                     let formattedPrice = self.formatPrice(price)
                     let relativeDate = self.relativeDateString(for: timestamp.dateValue())
                     
-                    let item = Item(id: documentId,nickname: nickname,image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: "\(heartCount)",isCompleted: false)
+                    let item = Item(id: documentId,nickname: nickname,image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: "\(heartCount)",isCompleted: isCompleted)
                     items.append(TotalItem.item(item))
                     dispatchGroup.leave()
                 }
@@ -146,7 +148,7 @@ class FirstViewController: UIViewController {
             dispatchGroup.notify(queue: .main) {
                 self.totalItems = items
                 self.tableView.reloadData()
-                self.activityIndicator.stopAnimating() 
+                self.activityIndicator.stopAnimating()
             }
         }
     }
@@ -201,7 +203,7 @@ class FirstViewController: UIViewController {
 
 extension FirstViewController: ItemAddViewControllerDelegate {
     func didSaveNewItem() {
-        loadData() 
+        loadData()
     }
 }
 
@@ -228,7 +230,7 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
             cell.titleLabel.text = item.title
             cell.priceLabel.text = item.price
             cell.dateLabel.text = item.date
-            cell.isCompleted = item.isCompleted ?? false
+            cell.isCompleted = item.isCompleted
             if let heartNumber = item.heartNumber, let heartCount = Int(heartNumber), heartCount > 0 {
                 cell.heartNumberLabel.text = heartNumber
                 cell.heartNumberLabel.isHidden = false
@@ -236,7 +238,7 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
                 cell.heartNumberLabel.text = nil
                 cell.heartNumberLabel.isHidden = true
             }
-           // cell.heartNumberLabel.text = item.heartNumber
+            // cell.heartNumberLabel.text = item.heartNumber
             cell.heartIcon.image = item.heartIcon
             cell.thumbnailImageView.image = item.image
             
@@ -272,7 +274,7 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
         guard let userInfo = notification.userInfo,
               let itemId = userInfo["itemId"] as? String,
               let heartCount = userInfo["heartCount"] as? Int else { return }
-
+        
         if let index = totalItems.firstIndex(where: {
             if case let .item(item) = $0 {
                 return item.id == itemId
