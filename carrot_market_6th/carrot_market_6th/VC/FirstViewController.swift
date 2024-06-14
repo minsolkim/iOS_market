@@ -12,6 +12,7 @@ import FirebaseFirestore
 
 class FirstViewController: UIViewController {
     deinit {
+        NotificationCenter.default.removeObserver(self, name: .statusDidChange, object: nil)
         NotificationCenter.default.removeObserver(self, name: .heartCountDidChange, object: nil)
     }
     //MARK: -- Property
@@ -50,6 +51,7 @@ class FirstViewController: UIViewController {
         addSubviews()
         setConfig()
         loadData() // Firestore 데이터 로드
+        NotificationCenter.default.addObserver(self, selector: #selector(handleStatusDidChange(_:)), name: .statusDidChange, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(handleHeartCountDidChange(_:)), name: .heartCountDidChange, object: nil)
         
     }
@@ -283,6 +285,25 @@ extension FirstViewController: UITableViewDataSource, UITableViewDelegate {
         }) {
             if case var .item(item) = totalItems[index] {
                 item.heartNumber = "\(heartCount)"
+                totalItems[index] = .item(item)
+                tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
+            }
+        }
+    }
+    
+    @objc private func handleStatusDidChange(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let itemId = userInfo["itemId"] as? String,
+              let isCompleted = userInfo["isCompleted"] as? Bool else { return }
+
+        if let index = totalItems.firstIndex(where: {
+            if case let .item(item) = $0 {
+                return item.id == itemId
+            }
+            return false
+        }) {
+            if case var .item(item) = totalItems[index] {
+                item.isCompleted = isCompleted
                 totalItems[index] = .item(item)
                 tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .none)
             }

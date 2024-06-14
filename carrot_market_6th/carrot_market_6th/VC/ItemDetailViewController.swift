@@ -43,6 +43,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         addContentScrollView()
         checkIfCurrentUserIsAuthor()
         setupCustomNavigationBar()
+        checkIsCompleted()
     }
     init(item: Item) {
         self.item = item
@@ -139,15 +140,6 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             make.leading.trailing.equalToSuperview().inset(20)
             make.top.equalTo(profileImage.snp.bottom).offset(10)
         }
-//        statusButton.snp.makeConstraints { make in
-//            make.top.equalTo(seperatedView.snp.bottom).offset(10)
-//            make.leading.equalTo(seperatedView.snp.leading)
-//        }
-//        titleLabel.snp.makeConstraints { make in
-//            make.top.equalTo(statusButton.snp.bottom).offset(16)
-//            make.leading.equalTo(seperatedView.snp.leading)
-//        }
-        
         dateLabel.snp.makeConstraints { make in
             make.top.equalTo(titleLabel.snp.bottom).offset(10)
             make.leading.equalTo(titleLabel.snp.leading)
@@ -277,8 +269,6 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
                     if lowercasedCurrentUserNickname == lowercasedItemNickname {
                         self.statusButton.isHidden = false
                         self.setupStatusButton()
-                        let statusText = self.item?.isCompleted == true ? "거래완료" : "판매중"
-                        self.statusButton.setTitle(statusText, for: .normal)
                         self.statusButton.snp.makeConstraints { make in
                             make.top.equalTo(self.seperatedView.snp.bottom).offset(10)
                             make.leading.equalTo(self.seperatedView.snp.leading)
@@ -321,6 +311,9 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
                         print("Failed to update item status: \(error)")
                     } else {
                         print("Item status successfully updated to \(statusText)")
+                        //firstviewcontroller 에 전달
+                        NotificationCenter.default.post(name: .statusDidChange, object: nil, userInfo: ["itemId": itemId, "isCompleted": isCompleted])
+
                     }
                 }
             } else {
@@ -329,6 +322,33 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         }
     }
     
+    private func checkIsCompleted() {
+        guard let itemId = item?.id else {
+            print("Item ID is nil")
+            return
+        }
+        
+        let db = Firestore.firestore()
+        let itemRef = db.collection("posts").document(itemId)
+        
+        itemRef.getDocument { (document, error) in
+            if let document = document, document.exists {
+                if let isCompleted = document.data()?["isCompleted"] as? Bool {
+                    let statusText = isCompleted ? "거래완료" : "판매중"
+                    self.statusButton.setTitle(statusText, for: .normal)
+                } else {
+                    print("isCompleted field does not exist")
+                }
+            } else {
+                if let error = error {
+                    print("Error getting document: \(error)")
+                } else {
+                    print("Document does not exist")
+                }
+            }
+        }
+    }
+
     @objc private func showStatusMenu() {
         let alertController = UIAlertController(title: "상태 변경", message: nil, preferredStyle: .actionSheet)
         
@@ -348,5 +368,8 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         
         present(alertController, animated: true, completion: nil)
     }
+}
+extension Notification.Name {
+    static let statusDidChange = Notification.Name("statusDidChange")
 }
 

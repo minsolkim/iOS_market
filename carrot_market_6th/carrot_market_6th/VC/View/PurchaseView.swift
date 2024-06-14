@@ -31,6 +31,7 @@ final class PurchaseView: UIView {
         setLayout()
         setTarget()
         checkHeartStatus()
+        checkIsCompleted()
     }
     
     @available(*, unavailable)
@@ -105,6 +106,8 @@ private extension PurchaseView {
     
     func setTarget() {
         heartButton.addTarget(self, action: #selector(heartButtonTapped), for: .touchUpInside)
+        addCartButton.addTarget(self, action: #selector(addCartButtonTapped), for: .touchUpInside)
+        
     }
     
     @objc private func heartButtonTapped() {
@@ -112,6 +115,31 @@ private extension PurchaseView {
         let imageName = isHeartSelected ? "fillHeart" : "heart"
         heartButton.setImage(UIImage(named: imageName), for: .normal)
         updateHeartStatus(increment: isHeartSelected)
+    }
+    
+    @objc private func addCartButtonTapped() {
+        handlePurchase()
+    }
+    
+    private func handlePurchase() {
+        guard let itemID = itemId else {
+            print("Item ID is nil.")
+            return
+        }
+        let db = Firestore.firestore()
+        
+        db.collection("posts").document(itemID).updateData([
+            "isCompleted": true
+        ]) { error in
+            if let error = error {
+                print("Error updating isCompleted status: \(error)")
+            } else {
+                print("isCompleted status updated successfully")
+                self.addCartButton.isEnabled = false
+                self.addCartButton.backgroundColor = .gray
+                self.presentPurchaseCompleteAlert()
+            }
+        }
     }
     
     private func updateHeartCount(increment: Bool) {
@@ -127,7 +155,7 @@ private extension PurchaseView {
                 print("Heart count updated successfully")
                 self.heartCount += incrementValue
                 NotificationCenter.default.post(name: .heartCountDidChange, object: nil, userInfo: ["itemId": self.itemId, "heartCount": self.heartCount])
-
+                
             }
         }
     }
@@ -143,7 +171,7 @@ private extension PurchaseView {
         }
         let db = Firestore.firestore()
         let userRef = db.collection("posts").document(itemID).collection("hearts").document(userID)
-        
+        let userHeartRef = db.collection("users").document(userID)
         if increment {
             userRef.setData([:]) { error in
                 if let error = error {
@@ -151,16 +179,55 @@ private extension PurchaseView {
                 } else {
                     print("Heart added successfully")
                     self.updateHeartCount(increment: true)
+                    
+                    userHeartRef.updateData([
+                        "heartPost": FieldValue.arrayUnion([itemID])
+                    ])
                 }
             }
         } else {
             userRef.delete { error in
-                if let error = error {
-                    print("Error removing heart: \(error.localizedDescription)")
-                } else {
-                    print("Heart removed successfully")
-                    self.updateHeartCount(increment: false)
+                 if let error = error {
+                     print("Error removing heart: \(error.localizedDescription)")
+                 } else {
+                     print("Heart removed successfully")
+                     self.updateHeartCount(increment: false)
+                     // Remove post ID from heartPost array in user's document
+                     userHeartRef.updateData([
+                         "heartPost": FieldValue.arrayRemove([itemID])
+                     ]) { error in
+                         if let error = error {
+                             print("Error removing post ID from heartPost: \(error.localizedDescription)")
+                         } else {
+                             print("Post ID removed from heartPost successfully")
+                         }
+                     }
+                 }
+             }
+        }
+    }
+    
+    private func presentPurchaseCompleteAlert() {
+        guard let viewController = self.window?.rootViewController else { return }
+        
+        let alert = UIAlertController(title: "구매 완료", message: "구매가 완료되었습니다.", preferredStyle: .alert)
+        let okAction = UIAlertAction(title: "확인", style: .default, handler: nil)
+        alert.addAction(okAction)
+        
+        viewController.present(alert, animated: true, completion: nil)
+    }
+    private func checkIsCompleted() {
+        guard let itemID = itemId else { return }
+        let db = Firestore.firestore()
+        
+        db.collection("posts").document(itemID).getDocument { document, error in
+            if let document = document, document.exists {
+                if let isCompleted = document.data()?["isCompleted"] as? Bool {
+                    self.addCartButton.isEnabled = !isCompleted
+                    self.addCartButton.backgroundColor = isCompleted ? .gray : .orange
                 }
+            } else {
+                print("Document does not exist or error occurred: \(String(describing: error))")
             }
         }
     }
@@ -170,7 +237,7 @@ private extension PurchaseView {
         guard let userID = Auth.auth().currentUser?.uid else { return }
         let db = Firestore.firestore()
         let userRef = db.collection("posts").document(itemID).collection("hearts").document(userID)
-
+        
         userRef.getDocument { document, error in
             if let document = document, document.exists {
                 self.isHeartSelected = true

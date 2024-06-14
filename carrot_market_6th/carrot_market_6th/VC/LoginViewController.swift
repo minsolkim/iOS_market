@@ -141,7 +141,8 @@ class LoginViewController: UIViewController {
             if let user = authResult?.user {
                 let db = Firestore.firestore()
                 db.collection("users").document(user.uid).setData([
-                    "nickname": nickname
+                    "nickname": nickname,
+                    "heartPost" : []
                 ]) { error in
                     if let error = error {
                         self.showAlert("오류", error.localizedDescription)
