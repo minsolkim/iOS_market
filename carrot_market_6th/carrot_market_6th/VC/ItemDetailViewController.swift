@@ -9,7 +9,13 @@ import UIKit
 import SnapKit
 import FirebaseFirestore
 import FirebaseAuth
+
+protocol ItemDetailViewControllerDelegate: AnyObject {
+    func didDeleteItem(_ item: Item)
+}
+
 class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
+    weak var delegate: ItemDetailViewControllerDelegate?
     var item: Item?
     private let titleLabel = UILabel()
     private let descriptionLabel = UILabel()
@@ -92,13 +98,17 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
             $0.backgroundColor = .clear
         }
     }
+    
     private func setupCustomNavigationBar() {
         navigationItem.hidesBackButton = true
 
         let backButton = UIBarButtonItem(image: UIImage(systemName: "chevron.left"), style: .plain, target: self, action: #selector(backButtonTapped))
         let homeButton = UIBarButtonItem(image: UIImage(systemName: "house"), style: .plain, target: self, action: #selector(homeButtonTapped))
+        let menuButton = UIBarButtonItem(image: UIImage(systemName: "ellipsis.circle"), style: .plain, target: self, action: #selector(menuButtonTapped))
+        
         navigationController?.navigationBar.tintColor = .white
         navigationItem.leftBarButtonItems = [backButton, homeButton]
+        navigationItem.rightBarButtonItem = menuButton
     }
     
     @objc private func backButtonTapped() {
@@ -107,6 +117,32 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     
     @objc private func homeButtonTapped() {
         navigationController?.popToRootViewController(animated: true)
+    }
+    @objc private func menuButtonTapped() {
+        let alert = UIAlertController(title: nil, message: "게시글을 삭제할까요?", preferredStyle: .actionSheet)
+        let deleteAction = UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
+            self?.deletePost()
+        }
+        let cancelAction = UIAlertAction(title: "취소", style: .cancel, handler: nil)
+        
+        alert.addAction(deleteAction)
+        alert.addAction(cancelAction)
+        
+        present(alert, animated: true, completion: nil)
+    }
+    private func deletePost() {
+        guard let item = item else { return }
+        
+        let db = Firestore.firestore()
+        db.collection("posts").document(item.id).delete { [weak self] error in
+            if let error = error {
+                print("Error deleting document: \(error)")
+            } else {
+                print("Document successfully deleted")
+                self?.delegate?.didDeleteItem(item)
+                self?.navigationController?.popViewController(animated: true)
+            }
+        }
     }
     private func setupViews() {
         view.addSubviews(purchaseView)

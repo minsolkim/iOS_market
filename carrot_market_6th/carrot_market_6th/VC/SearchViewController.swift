@@ -17,7 +17,6 @@ class SearchViewController: UIViewController {
     private var allItems: [Item] = []
     private var filteredItems: [Item] = []
     private let tableView = UITableView().then {
-        $0.allowsSelection = false
         $0.backgroundColor = .white
         $0.showsVerticalScrollIndicator = true
         $0.contentInset = UIEdgeInsets(top: 10, left: 0, bottom: 10, right: 0)
@@ -142,6 +141,8 @@ class SearchViewController: UIViewController {
             
             for document in documents {
                 let documentId = document.documentID
+                let heartCount = document.data()["heartCount"] as? Int ?? 0
+                let isCompleted = document.data()["isCompleted"] as? Bool ?? false
                 guard let nickname = document.data()["nickname"] as? String,
                       let title = document.data()["title"] as? String,
                       let price = document.data()["price"] as? String,
@@ -158,7 +159,7 @@ class SearchViewController: UIViewController {
                     let formattedPrice = self.formatPrice(price)
                     let relativeDate = self.relativeDateString(for: timestamp.dateValue())
                     
-                    let item = Item(id: documentId,nickname: nickname, image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: nil,isCompleted: false)
+                    let item = Item(id: documentId,nickname: nickname, image: image, title: title, description: content, price: formattedPrice, date: relativeDate, heartIcon: UIImage(named: "heartIcon"), heartNumber: "\(heartCount)",isCompleted: isCompleted)
                     items.append(item)
                     dispatchGroup.leave()
                 }
@@ -213,7 +214,14 @@ extension SearchViewController: UITableViewDataSource, UITableViewDelegate {
         cell.titleLabel.text = item.title
         cell.priceLabel.text = item.price
         cell.dateLabel.text = item.date
-        cell.heartNumberLabel.text = item.heartNumber
+        cell.isCompleted = item.isCompleted
+        if let heartNumber = item.heartNumber, let heartCount = Int(heartNumber), heartCount > 0 {
+            cell.heartNumberLabel.text = heartNumber
+            cell.heartNumberLabel.isHidden = false
+        } else {
+            cell.heartNumberLabel.text = nil
+            cell.heartNumberLabel.isHidden = true
+        }
         cell.heartIcon.image = item.heartIcon
         cell.thumbnailImageView.image = item.image
         return cell

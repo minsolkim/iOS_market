@@ -10,7 +10,7 @@ import SnapKit
 import Then
 import FirebaseFirestore
 
-class FirstViewController: UIViewController {
+class FirstViewController: UIViewController,ItemDetailViewControllerDelegate {
     deinit {
         NotificationCenter.default.removeObserver(self, name: .statusDidChange, object: nil)
         NotificationCenter.default.removeObserver(self, name: .heartCountDidChange, object: nil)
@@ -56,10 +56,12 @@ class FirstViewController: UIViewController {
         
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        loadData()
+    }
     private func addSubviews() {
-        view.addSubview(tableView)
-        view.addSubview(floatingButton)
-        view.addSubview(activityIndicator)
+        view.addSubviews(tableView,floatingButton,activityIndicator)
         view.bringSubviewToFront(floatingButton)
         floatingButton.isHidden = false
         floatingButton.addTarget(self, action: #selector(floatingButtonTapped), for: .touchUpInside)
@@ -96,6 +98,19 @@ class FirstViewController: UIViewController {
         flexibleSpace.width = 5.0
         navigationItem.rightBarButtonItems = [searchBtn, flexibleSpace]
     }
+    
+    func didDeleteItem(_ item: Item) {
+        if let index = totalItems.firstIndex(where: {
+            if case let .item(currentItem) = $0 {
+                return currentItem.id == item.id
+            }
+            return false
+        }) {
+            totalItems.remove(at: index)
+            tableView.reloadData()
+        }
+    }
+    
     private func setTableView() {
         self.tableView.dataSource = self
         self.tableView.delegate = self
@@ -201,6 +216,7 @@ class FirstViewController: UIViewController {
         // 뷰 컨트롤러를 모달로 프레젠트
         self.present(navigationController, animated: true, completion: nil)
     }
+
 }
 
 extension FirstViewController: ItemAddViewControllerDelegate {
