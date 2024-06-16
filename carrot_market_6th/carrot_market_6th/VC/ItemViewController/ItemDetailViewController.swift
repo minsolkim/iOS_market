@@ -134,39 +134,42 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     }
     
     private func deletePost() {
-         guard let item = item else { return }
+        guard let item = item else { return }
+        
+        let db = Firestore.firestore()
+        let batch = db.batch()
+        
+        // Delete main post document
+        let postRef = db.collection("posts").document(item.id)
+        batch.deleteDocument(postRef)
+        
+        // Delete 'hearts' subcollection documents
+        let heartsRef = postRef.collection("hearts")
+        heartsRef.getDocuments { (querySnapshot, error) in
+            if let error = error {
+                print("Error fetching hearts documents: \(error.localizedDescription)")
+                return
+            }
+            
+            for document in querySnapshot?.documents ?? [] {
+                let docRef = heartsRef.document(document.documentID)
+                batch.deleteDocument(docRef)
+            }
+            
+            batch.commit { [weak self] (error) in
+                if let error = error {
+                    print("Error batch deleting documents: \(error.localizedDescription)")
+                } else {
+                    print("Batch delete operation successful")
+                    if let item = self?.item {
+                        self?.delegate?.didDeleteItem(item)
+                    }
+                    self?.navigationController?.popViewController(animated: true)
+                }
+            }
+        }
+    }
 
-         let db = Firestore.firestore()
-         db.collection("posts").document(item.id).getDocument { (document, error) in
-             if let document = document, document.exists {
-                 if let documentData = document.data(),
-                    let itemNickname = documentData["nickname"] as? String,
-                    let currentUserNickname = self.item?.nickname,
-                    currentUserNickname.lowercased() == itemNickname.lowercased() {
-                     
-                     let batch = db.batch()
-                     let postRef = db.collection("posts").document(item.id)
-                     batch.deleteDocument(postRef)
-                     
-                     batch.commit { [weak self] error in
-                         if let error = error {
-                             print("Error deleting document: \(error)")
-                         } else {
-                             print("Document successfully deleted")
-                             if let item = self?.item {
-                                 self?.delegate?.didDeleteItem(item)
-                             }
-                             self?.navigationController?.popViewController(animated: true)
-                         }
-                     }
-                 } else {
-                     print("User does not have permission to delete this document")
-                 }
-             } else {
-                 print("Document does not exist")
-             }
-         }
-     }
     
     private func setupViews() {
         view.addSubviews(purchaseView)
