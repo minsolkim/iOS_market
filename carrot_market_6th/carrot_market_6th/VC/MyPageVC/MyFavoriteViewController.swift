@@ -30,6 +30,10 @@ class MyFavoriteViewController: UIViewController {
         fetchFavoritePost()
     }
     private func setNavigationController() {
+        // 뒤로 가기 버튼 아이콘 설정
+        let backButton = UIBarButtonItem(title: "", style: .plain, target: nil, action: nil)
+        navigationController?.navigationBar.topItem?.backBarButtonItem = backButton
+        
         navigationController?.navigationBar.tintColor = .black
         self.navigationItem.title = "관심목록"
     }

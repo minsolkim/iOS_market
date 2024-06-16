@@ -10,20 +10,34 @@ import SnapKit
 import Then
 import FirebaseAuth
 import FirebaseFirestore
+
 class LoginViewController: UIViewController {
+    
     private let nicknameLabel = UILabel()
     private let nicknameTextField = UITextField()
+    private let emailLabel = UILabel()
+    private let emailTextField = UITextField()
     private let passwordLabel = UILabel()
     private let passwordTextField = UITextField()
     private let loginButton = UIButton()
     private let joinButton = UIButton()
-
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .white
         setConfigure()
         setConstraints()
         setupActions()
+        setupKeyboardDismissal()
+    }
+    
+    private func setupKeyboardDismissal() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
     
     func setConfigure() {
@@ -32,6 +46,7 @@ class LoginViewController: UIViewController {
             $0.font = .boldSystemFont(ofSize: 13)
             $0.textColor = .black
         }
+        
         nicknameTextField.do {
             $0.backgroundColor = UIColor.warmgray2
             $0.font = UIFont.systemFont(ofSize: 16, weight: .bold)
@@ -42,6 +57,24 @@ class LoginViewController: UIViewController {
             $0.leftView = leftPaddingView
             $0.leftViewMode = .always
         }
+        
+        emailLabel.do {
+            $0.text = "이메일"
+            $0.font = .boldSystemFont(ofSize: 13)
+            $0.textColor = .black
+        }
+        
+        emailTextField.do {
+            $0.backgroundColor = UIColor.warmgray2
+            $0.font = UIFont.systemFont(ofSize: 16, weight: .bold)
+            $0.layer.cornerRadius = 10
+            $0.layer.masksToBounds = true
+            $0.textColor = .black
+            let leftPaddingView = UIView(frame: CGRect(x: 0, y: 0, width: 18, height: $0.frame.height))
+            $0.leftView = leftPaddingView
+            $0.leftViewMode = .always
+        }
+        
         passwordLabel.do {
             $0.text = "비밀번호"
             $0.font = .boldSystemFont(ofSize: 13)
@@ -60,6 +93,7 @@ class LoginViewController: UIViewController {
             $0.leftView = leftPaddingView
             $0.leftViewMode = .always
         }
+        
         joinButton.do {
             $0.backgroundColor = UIColor.warmgray
             $0.setTitle("회원가입", for: .normal)
@@ -78,22 +112,37 @@ class LoginViewController: UIViewController {
     }
     
     func setConstraints() {
-        view.addSubviews(nicknameLabel, nicknameTextField, passwordLabel, passwordTextField, joinButton,loginButton)
+        view.addSubviews(nicknameLabel, nicknameTextField, emailLabel, emailTextField, passwordLabel, passwordTextField, joinButton, loginButton)
         
         nicknameLabel.snp.makeConstraints {
             $0.top.equalTo(view.safeAreaLayoutGuide).offset(100)
             $0.left.equalToSuperview().offset(20)
         }
+        
         nicknameTextField.snp.makeConstraints {
             $0.top.equalTo(nicknameLabel.snp.bottom).offset(10)
             $0.left.equalToSuperview().offset(20)
             $0.right.equalToSuperview().offset(-20)
             $0.height.equalTo(40)
         }
-        passwordLabel.snp.makeConstraints {
+        
+        emailLabel.snp.makeConstraints {
             $0.top.equalTo(nicknameTextField.snp.bottom).offset(20)
             $0.left.equalToSuperview().offset(20)
         }
+        
+        emailTextField.snp.makeConstraints {
+            $0.top.equalTo(emailLabel.snp.bottom).offset(10)
+            $0.left.equalToSuperview().offset(20)
+            $0.right.equalToSuperview().offset(-20)
+            $0.height.equalTo(40)
+        }
+        
+        passwordLabel.snp.makeConstraints {
+            $0.top.equalTo(emailTextField.snp.bottom).offset(20)
+            $0.left.equalToSuperview().offset(20)
+        }
+        
         passwordTextField.snp.makeConstraints {
             $0.top.equalTo(passwordLabel.snp.bottom).offset(10)
             $0.left.equalToSuperview().offset(20)
@@ -118,18 +167,16 @@ class LoginViewController: UIViewController {
     
     func setupActions() {
         joinButton.addTarget(self, action: #selector(joinButtonTapped(_:)), for: .touchUpInside)
-        loginButton.addTarget(self, action: #selector(loginButtonTaaped(_:)), for: .touchUpInside)
+        loginButton.addTarget(self, action: #selector(loginButtonTapped(_:)), for: .touchUpInside)
     }
     
     @objc private func joinButtonTapped(_ sender: Any) {
         guard let nickname = nicknameTextField.text, !nickname.isEmpty,
+              let email = emailTextField.text, !email.isEmpty,
               let password = passwordTextField.text, !password.isEmpty else {
-            showAlert("오류", "닉네임과 비밀번호를 모두 입력하세요.")
+            showAlert("오류", "닉네임, 이메일, 비밀번호를 모두 입력하세요.")
             return
         }
-        
-        // 닉네임을 이메일 형식으로 변환
-        let email = "\(nickname)@naver.com"
         
         Auth.auth().createUser(withEmail: email, password: password) { authResult, error in
             if let error = error {
@@ -156,13 +203,14 @@ class LoginViewController: UIViewController {
             }
         }
     }
-    @objc private func loginButtonTaaped(_ sender: Any) {
-        guard let nickname = nicknameTextField.text, !nickname.isEmpty,
+    
+    @objc private func loginButtonTapped(_ sender: Any) {
+        guard let email = emailTextField.text, !email.isEmpty,
               let password = passwordTextField.text, !password.isEmpty else {
             showAlert("오류", "이메일과 비밀번호를 모두 입력하세요.")
             return
         }
-        let email = "\(nickname)@naver.com"
+        
         Auth.auth().signIn(withEmail: email, password: password) { [weak self] authResult, error in
             guard let self = self else { return }
             
@@ -177,7 +225,6 @@ class LoginViewController: UIViewController {
             }
         }
     }
-
     
     private func showAlert(_ title: String, _ message: String) {
         let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
@@ -185,5 +232,4 @@ class LoginViewController: UIViewController {
         present(alertController, animated: true, completion: nil)
     }
 }
-
 

@@ -135,6 +135,7 @@ private extension PurchaseView {
                 print("Error updating isCompleted status: \(error)")
             } else {
                 print("isCompleted status updated successfully")
+                NotificationCenter.default.post(name: .statusDidChange, object: nil, userInfo: ["itemId": itemID, "isCompleted": true])
                 self.addCartButton.isEnabled = false
                 self.addCartButton.backgroundColor = .gray
                 self.presentPurchaseCompleteAlert()

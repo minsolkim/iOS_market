@@ -47,7 +47,7 @@ class SearchViewController: UIViewController {
             $0.backgroundColor = UIColor.warmgray2
             $0.layer.cornerRadius = 10
             $0.layer.masksToBounds = true
-            $0.placeholder = "내 근처에서 검색"
+            $0.placeholder = "게시글 검색"
             $0.leftView = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: searchTextField.frame.height))
             $0.leftViewMode = .always
             $0.addTarget(self, action: #selector(textFieldDidChange), for: .editingChanged)
@@ -65,7 +65,14 @@ class SearchViewController: UIViewController {
             $0.addTarget(self, action: #selector(backButtonTapped), for: .touchUpInside)
         }
     }
-    
+    func setupKeyboardDismissal() {
+        // 키보드가 활성화된 상태에서 화면을 터치했을 때 키보드가 사라지도록 설정합니다.
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
+    }
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
     @objc func clearButtonTapped() {
         searchTextField.text = ""
         filteredItems = []

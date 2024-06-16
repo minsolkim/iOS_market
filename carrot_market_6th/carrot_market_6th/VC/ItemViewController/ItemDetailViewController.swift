@@ -17,6 +17,7 @@ protocol ItemDetailViewControllerDelegate: AnyObject {
 class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     weak var delegate: ItemDetailViewControllerDelegate?
     var item: Item?
+    private var currentUserNickname: String?
     private let titleLabel = UILabel()
     private let descriptionLabel = UILabel()
     private let priceLabel = UILabel()
@@ -26,8 +27,6 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
     private let pageControl = UIPageControl()
     private let heartIcon = UIButton()
     private let purchaseButton = UIButton()
-    private let navigationBar = NavigationBar()
-    private let navigationBarBackgroundView = UIView()
     private let profileImage = UIImageView()
     private let profileName = UILabel()
     private let profileLocation = UILabel()
@@ -50,6 +49,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         checkIfCurrentUserIsAuthor()
         setupCustomNavigationBar()
         checkIsCompleted()
+    
     }
     init(item: Item) {
         self.item = item
@@ -92,6 +92,8 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         }
         descriptionLabel.do {
             $0.font = .boldSystemFont(ofSize: 15)
+            $0.numberOfLines = 0
+            $0.lineBreakMode = .byWordWrapping // 단어 단위로 줄바꿈
             $0.textColor = .black
         }
         contentView.do {
@@ -109,8 +111,8 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         navigationController?.navigationBar.tintColor = .white
         navigationItem.leftBarButtonItems = [backButton, homeButton]
         navigationItem.rightBarButtonItem = menuButton
+        menuButton.isHidden = true // 기본적으로 숨김 처리
     }
-    
     @objc private func backButtonTapped() {
         navigationController?.popViewController(animated: true)
     }
@@ -130,20 +132,42 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
         
         present(alert, animated: true, completion: nil)
     }
+    
     private func deletePost() {
-        guard let item = item else { return }
-        
-        let db = Firestore.firestore()
-        db.collection("posts").document(item.id).delete { [weak self] error in
-            if let error = error {
-                print("Error deleting document: \(error)")
-            } else {
-                print("Document successfully deleted")
-                self?.delegate?.didDeleteItem(item)
-                self?.navigationController?.popViewController(animated: true)
-            }
-        }
-    }
+         guard let item = item else { return }
+
+         let db = Firestore.firestore()
+         db.collection("posts").document(item.id).getDocument { (document, error) in
+             if let document = document, document.exists {
+                 if let documentData = document.data(),
+                    let itemNickname = documentData["nickname"] as? String,
+                    let currentUserNickname = self.item?.nickname,
+                    currentUserNickname.lowercased() == itemNickname.lowercased() {
+                     
+                     let batch = db.batch()
+                     let postRef = db.collection("posts").document(item.id)
+                     batch.deleteDocument(postRef)
+                     
+                     batch.commit { [weak self] error in
+                         if let error = error {
+                             print("Error deleting document: \(error)")
+                         } else {
+                             print("Document successfully deleted")
+                             if let item = self?.item {
+                                 self?.delegate?.didDeleteItem(item)
+                             }
+                             self?.navigationController?.popViewController(animated: true)
+                         }
+                     }
+                 } else {
+                     print("User does not have permission to delete this document")
+                 }
+             } else {
+                 print("Document does not exist")
+             }
+         }
+     }
+    
     private func setupViews() {
         view.addSubviews(purchaseView)
         view.addSubviews(scrollView, pageControl, profileImage, profileName, seperatedView, titleLabel, dateLabel, descriptionLabel,statusButton)
@@ -305,6 +329,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
                     if lowercasedCurrentUserNickname == lowercasedItemNickname {
                         self.statusButton.isHidden = false
                         self.setupStatusButton()
+                        self.navigationItem.rightBarButtonItem?.isHidden = false
                         self.statusButton.snp.makeConstraints { make in
                             make.top.equalTo(self.seperatedView.snp.bottom).offset(10)
                             make.leading.equalTo(self.seperatedView.snp.leading)
@@ -315,6 +340,7 @@ class ItemDetailViewController: UIViewController, UIScrollViewDelegate {
                         }
                     } else {
                         self.statusButton.isHidden = true
+                        self.navigationItem.rightBarButtonItem?.isHidden = true
                         self.titleLabel.snp.makeConstraints { make in
                             make.top.equalTo(self.seperatedView.snp.bottom).offset(10)
                             make.leading.equalTo(self.seperatedView.snp.leading)

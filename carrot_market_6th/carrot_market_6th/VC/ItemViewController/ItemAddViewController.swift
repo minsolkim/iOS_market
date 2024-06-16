@@ -52,6 +52,12 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         navigationControl()
         setConfigure()
         setConstraints()
+        setupKeyboardDismissal()
+    }
+    private func setupKeyboardDismissal() {
+        // 키보드가 활성화된 상태에서 화면을 터치했을 때 키보드가 사라지도록 설정합니다.
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
     }
     
     func navigationControl() {
@@ -196,9 +202,9 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
         var configuration = PHPickerConfiguration(photoLibrary: photoLibrary)
         
         configuration.selectionLimit = 5 //한번에 가지고 올 이미지 갯수 제한
-        configuration.filter = .any(of: [.images]) // 이미지, 비디오 등의 옵션
+        configuration.filter = .any(of: [.images])
         
-        DispatchQueue.main.async { // 메인 스레드에서 코드를 실행시켜야함
+        DispatchQueue.main.async {
             let picker = PHPickerViewController(configuration: configuration)
             picker.delegate = self
             picker.isEditing = true
@@ -271,53 +277,64 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
             showAlert(message: "로그인이 필요합니다.")
             return
         }
-        let email = user.email ?? "Anonymous"
-        let nickname = email.components(separatedBy: "@").first ?? "Anonymous"
-        var imageUrls: [String] = []
-        let dispatchGroup = DispatchGroup()
         
-        for image in selectedImages {
-            dispatchGroup.enter()
-            uploadImageToFirebase(image: image) { result in
-                switch result {
-                case .success(let url):
-                    imageUrls.append(url)
-                case .failure(let error):
-                    print("Error uploading image: \(error)")
-                }
-                dispatchGroup.leave()
-            }
-        }
-        
-        dispatchGroup.notify(queue: .main) {
-            let postData: [String: Any] = [
-                "title": title,
-                "price": price,
-                "content": content,
-                "timestamp": Timestamp(date: Date()),
-                "imageUrls": imageUrls,
-                "nickname": nickname,
-                "heartCount": 0,
-                "hearts": [], // heart 상태를 관리할 필드
-                "isCompleted" : false
-            ]
-            
-            let db = Firestore.firestore()
-            var ref: DocumentReference? = nil
-            ref = db.collection("posts").addDocument(data: postData) { error in
-                if let error = error {
-                    self.showAlert(message: "데이터를 저장하는 데 실패했습니다: \(error.localizedDescription)")
-                } else {
-                    if let documentID = ref?.documentID {
-                        print("Document ID: \(documentID)")
-                        // Do something with the documentID if needed
+        // 사용자의 닉네임 가져오기
+        let db = Firestore.firestore()
+        db.collection("users").document(user.uid).getDocument { (document, error) in
+            if let document = document, document.exists {
+                if let nickname = document.data()?["nickname"] as? String {
+                    var imageUrls: [String] = []
+                    let dispatchGroup = DispatchGroup()
+                    
+                    for image in self.selectedImages {
+                        dispatchGroup.enter()
+                        self.uploadImageToFirebase(image: image) { result in
+                            switch result {
+                            case .success(let url):
+                                imageUrls.append(url)
+                            case .failure(let error):
+                                print("Error uploading image: \(error)")
+                            }
+                            dispatchGroup.leave()
+                        }
                     }
-                    self.delegate?.didSaveNewItem()
-                    self.dismiss(animated: true)
+                    dispatchGroup.notify(queue: .main) {
+                        let postData: [String: Any] = [
+                            "title": title,
+                            "price": price,
+                            "content": content,
+                            "timestamp": Timestamp(date: Date()),
+                            "imageUrls": imageUrls,
+                            "nickname": nickname,
+                            "heartCount": 0,
+                            "hearts": [], // heart 상태를 관리할 필드
+                            "isCompleted" : false
+                        ]
+                        
+                        let db = Firestore.firestore()
+                        var ref: DocumentReference? = nil
+                        ref = db.collection("posts").addDocument(data: postData) { error in
+                            if let error = error {
+                                self.showAlert(message: "데이터를 저장하는 데 실패했습니다: \(error.localizedDescription)")
+                            } else {
+                                if let documentID = ref?.documentID {
+                                    print("Document ID: \(documentID)")
+                                    // Do something with the documentID if needed
+                                }
+                                self.delegate?.didSaveNewItem()
+                                self.dismiss(animated: true)
+                            }
+                        }
+                    }
+                } else {
+                    self.showAlert(message: "사용자의 닉네임을 가져오는 데 실패했습니다.")
                 }
+            } else {
+                self.showAlert(message: "사용자 정보가 존재하지 않습니다.")
             }
         }
     }
+
 
 
     @objc func keyboardWillShow(notification: NSNotification) {
@@ -325,6 +342,10 @@ class ItemAddViewController: UIViewController,UICollectionViewDelegateFlowLayout
             let keyboardHeight = keyboardSize.height
             //adjustViewForKeyboard(show: true, keyboardHeight: keyboardHeight)
         }
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
     
     @objc func keyboardWillHide(notification: NSNotification) {
@@ -440,7 +461,6 @@ extension ItemAddViewController: UICollectionViewDelegate, UICollectionViewDataS
 extension ItemAddViewController: UITextViewDelegate {
     func textViewDidChange(_ textView: UITextView) {
         guard let text = textView.text else { return }
-        
         //글자 수 제한
         let maxLength = 100
         if text.count > maxLength {

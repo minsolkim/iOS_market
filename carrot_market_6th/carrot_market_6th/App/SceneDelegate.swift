@@ -21,7 +21,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.makeKeyAndVisible()
     }
     func showMainTabBarController() {
-        let viewController1 = FirstViewController()
+        let viewController1 = HomeViewController()
         let navigationController1 = UINavigationController(rootViewController: viewController1)
         navigationController1.tabBarItem = UITabBarItem(title: "홈", image: resizeImage(image: UIImage(named: "home"), targetSize: CGSize(width: 20, height: 20)), selectedImage: nil)
 
